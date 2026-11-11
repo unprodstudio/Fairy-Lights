@@ -11,7 +11,7 @@ import java.util.function.Supplier;
 public class ConnectionType<T extends Connection> {
     private final Factory<T> factory;
 
-    private final Supplier<? extends Item> item;
+    private final Item item;
 
     public ConnectionType(final Builder<T> builder) {
         this.factory = builder.factory;
@@ -23,19 +23,19 @@ public class ConnectionType<T extends Connection> {
     }
 
     public Item getItem() {
-        return this.item.get();
+        return this.item;
     }
 
     public static final class Builder<T extends Connection> {
         final Factory<T> factory;
 
-        Supplier<? extends Item> item = () -> Items.AIR;
+        Item item = Items.AIR;
 
         private Builder(final Factory<T> factory) {
             this.factory = factory;
         }
 
-        public Builder<T> item(final Supplier<? extends Item> item) {
+        public Builder<T> item(final Item item) {
             this.item = item;
             return this;
         }

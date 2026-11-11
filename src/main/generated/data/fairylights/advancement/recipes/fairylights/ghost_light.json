@@ -3,7 +3,7 @@
   "criteria": {
     "has_the_recipe": {
       "conditions": {
-        "recipe": "fairylights:ghost_light"
+        "recipes": "fairylights:ghost_light"
       },
       "trigger": "minecraft:recipe_unlocked"
     }

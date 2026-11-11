@@ -210,7 +210,7 @@ public abstract class Connection implements NBTSerializable {
             );
             this.world.addFreshEntity(item);
         }
-        this.world.playSound(null, hit.x, hit.y, hit.z, FLSounds.CORD_DISCONNECT.get(), SoundSource.BLOCKS, 1, 1);
+        this.world.playSound(null, hit.x, hit.y, hit.z, FLSounds.CORD_DISCONNECT, SoundSource.BLOCKS, 1, 1);
     }
 
     public boolean reconnect(final Fastener<?> destination) {
@@ -254,7 +254,7 @@ public abstract class Connection implements NBTSerializable {
             conn.slack = this.slack;
             conn.onConnect(player.level(), player, heldStack);
             heldStack.shrink(1);
-            this.world.playSound(null, hit.x, hit.y, hit.z, FLSounds.CORD_CONNECT.get(), SoundSource.BLOCKS, 1, 1);
+            this.world.playSound(null, hit.x, hit.y, hit.z, FLSounds.CORD_CONNECT, SoundSource.BLOCKS, 1, 1);
             return true;
         }).orElse(false);
     }
@@ -268,7 +268,7 @@ public abstract class Connection implements NBTSerializable {
             this.slack = 0;
         }
         this.computeCatenary();
-        this.world.playSound(null, hit.x, hit.y, hit.z, FLSounds.CORD_STRETCH.get(), SoundSource.BLOCKS, 1, 0.8F + (MAX_SLACK - this.slack) * 0.4F);
+        this.world.playSound(null, hit.x, hit.y, hit.z, FLSounds.CORD_STRETCH, SoundSource.BLOCKS, 1, 0.8F + (MAX_SLACK - this.slack) * 0.4F);
         return true;
     }
 
@@ -291,12 +291,12 @@ public abstract class Connection implements NBTSerializable {
             if (pull > 0) {
                 final int stage = (int) (pull + 0.1F);
                 if (stage > this.prevStretchStage) {
-                    this.world.playSound(null, point.x, point.y, point.z, FLSounds.CORD_STRETCH.get(), SoundSource.BLOCKS, 0.25F, 0.5F + stage / 8F);
+                    this.world.playSound(null, point.x, point.y, point.z, FLSounds.CORD_STRETCH, SoundSource.BLOCKS, 0.25F, 0.5F + stage / 8F);
                 }
                 this.prevStretchStage = stage;
             }
             if (dist > MAX_LENGTH + PULL_RANGE) {
-                this.world.playSound(null, point.x, point.y, point.z, FLSounds.CORD_SNAP.get(), SoundSource.BLOCKS, 0.75F, 0.8F + this.world.getRandom().nextFloat() * 0.3F);
+                this.world.playSound(null, point.x, point.y, point.z, FLSounds.CORD_SNAP, SoundSource.BLOCKS, 0.75F, 0.8F + this.world.getRandom().nextFloat() * 0.3F);
                 this.remove();
             } else if (dest.isMoving()) {
                 dest.resistSnap(from);

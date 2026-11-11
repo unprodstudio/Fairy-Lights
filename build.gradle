@@ -16,7 +16,9 @@ loom.accessWidenerPath = file("src/main/resources/fairylights.accesswidener")
 //sourceSets.main.resources { srcDir 'src/generated/resources' }
 
 fabricApi {
-    configureDataGeneration()
+    configureDataGeneration {
+        client = true
+    }
 }
 
 repositories {
@@ -91,8 +93,6 @@ dependencies {
     minecraft 'com.mojang:minecraft:26.3'
     implementation "net.fabricmc:fabric-loader:0.20.1"
     implementation "net.fabricmc.fabric-api:fabric-api:0.166.0+26.3"
-
-    implementation "dev.architectury:architectury-fabric:22.0.5"
 
 //    def jeiVersion = "31.17.0.109"
 //    compileOnly("mezz.jei:jei-26.3-common-api:$jeiVersion")

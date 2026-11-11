@@ -1,6 +1,7 @@
 package me.paulf.fairylights.util.crafting;
 
 import com.google.common.base.Strings;
+import com.google.common.base.Suppliers;
 import me.paulf.fairylights.util.crafting.ingredient.*;
 import net.fabricmc.fabric.api.recipe.v1.ingredient.DefaultCustomIngredients;
 import net.minecraft.core.HolderLookup;
@@ -8,9 +9,11 @@ import net.minecraft.tags.TagKey;
 import net.minecraft.util.Util;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.ItemStackTemplate;
 import net.minecraft.world.item.crafting.Ingredient;
 import net.minecraft.world.item.crafting.RecipeSerializer;
 import net.minecraft.world.level.block.Block;
+import org.jspecify.annotations.Nullable;
 
 import java.util.*;
 import java.util.function.Function;
@@ -22,7 +25,7 @@ public final class GenericRecipeBuilder {
 
     private final Supplier<? extends RecipeSerializer<GenericRecipe>> serializer;
 
-    private ItemStack output;
+    @Nullable private ItemStackTemplate output;
 
     private char outputChar = 0;
 
@@ -36,21 +39,21 @@ public final class GenericRecipeBuilder {
 
     private final List<Function<HolderLookup.Provider, AuxiliaryIngredient<?>>> auxiliaryIngredients = new ArrayList<>();
 
-    public GenericRecipeBuilder(final Supplier<? extends RecipeSerializer<GenericRecipe>> serializer) {
-        this(serializer, ItemStack.EMPTY);
+    public GenericRecipeBuilder(Supplier<RecipeSerializer<GenericRecipe>> serializer) {
+        this(serializer, (ItemStackTemplate) null);
     }
 
-    public GenericRecipeBuilder(final Supplier<? extends RecipeSerializer<GenericRecipe>> serializer, final Item item) {
-        this(serializer, new ItemStack(item));
+    public GenericRecipeBuilder(Supplier<RecipeSerializer<GenericRecipe>> serializer, final Item item) {
+        this(serializer, new ItemStackTemplate(item));
     }
 
-    public GenericRecipeBuilder(final Supplier<? extends RecipeSerializer<GenericRecipe>> serializer, final Block block) {
-        this(serializer, new ItemStack(block));
+    public GenericRecipeBuilder(Supplier<RecipeSerializer<GenericRecipe>> serializer, final Block block) {
+        this(serializer, new ItemStackTemplate(block.asItem()));
     }
 
-    public GenericRecipeBuilder(final Supplier<? extends RecipeSerializer<GenericRecipe>> serializer, final ItemStack output) {
+    public GenericRecipeBuilder(Supplier<RecipeSerializer<GenericRecipe>> serializer, final ItemStackTemplate output) {
         this.serializer = serializer;
-        this.output = Objects.requireNonNull(output, "output");
+        this.output = output;
     }
 
     public GenericRecipeBuilder withShape(final String... shape) {
@@ -80,7 +83,7 @@ public final class GenericRecipeBuilder {
     }
 
     public GenericRecipeBuilder withOutput(final Item item, final int size) {
-        return this.withOutput(new ItemStack(Objects.requireNonNull(item, "item"), size));
+        return this.withOutput(new ItemStackTemplate(Objects.requireNonNull(item, "item"), size));
     }
 
     public GenericRecipeBuilder withOutput(final Block block) {
@@ -88,11 +91,11 @@ public final class GenericRecipeBuilder {
     }
 
     public GenericRecipeBuilder withOutput(final Block block, final int size) {
-        return this.withOutput(new ItemStack(Objects.requireNonNull(block, "block"), size));
+        return this.withOutput(new ItemStackTemplate(Objects.requireNonNull(block, "block").asItem(), size));
     }
 
-    public GenericRecipeBuilder withOutput(final ItemStack output) {
-        this.output = Objects.requireNonNull(output, "output");
+    public GenericRecipeBuilder withOutput(final ItemStackTemplate output) {
+        this.output = output;
         return this;
     }
 
@@ -102,15 +105,18 @@ public final class GenericRecipeBuilder {
     }
 
     public GenericRecipeBuilder withIngredient(final char key, final Item item) {
-        return this.withIngredient(key, new ItemStack(Objects.requireNonNull(item, "item"), 1));
+        return this.withIngredient(key, new ItemStackTemplate(Objects.requireNonNull(item, "item"), 1));
     }
 
     public GenericRecipeBuilder withIngredient(final char key, final Block block) {
-        return this.withIngredient(key, new ItemStack(Objects.requireNonNull(block, "block"), 1));
+        return this.withIngredient(key, new ItemStackTemplate(Objects.requireNonNull(block, "block").asItem(), 1));
     }
 
-    public GenericRecipeBuilder withIngredient(final char key, final ItemStack stack) {
-        return this.withIngredient(key, DefaultCustomIngredients.components(Objects.requireNonNull(stack, "stack")));
+    public GenericRecipeBuilder withIngredient(final char key, final ItemStackTemplate stack) {
+        Ingredient ingredient = Ingredient.of(stack.item().value());
+        if (!stack.components().isEmpty())
+            ingredient = DefaultCustomIngredients.components(ingredient, stack.components());
+        return this.withIngredient(key, new BasicRegularIngredient(ingredient));
     }
 
     public GenericRecipeBuilder withIngredient(final char key, final Ingredient ingredient) {
@@ -131,27 +137,30 @@ public final class GenericRecipeBuilder {
     }
 
     public GenericRecipeBuilder withAuxiliaryIngredient(final Item item) {
-        return this.withAuxiliaryIngredient(new ItemStack(Objects.requireNonNull(item, "item")));
+        return this.withAuxiliaryIngredient(new ItemStackTemplate(Objects.requireNonNull(item, "item")));
     }
 
     public GenericRecipeBuilder withAuxiliaryIngredient(final Item item, final boolean isRequired, final int limit) {
-        return this.withAuxiliaryIngredient(new ItemStack(Objects.requireNonNull(item, "item")), isRequired, limit);
+        return this.withAuxiliaryIngredient(new ItemStackTemplate(Objects.requireNonNull(item, "item")), isRequired, limit);
     }
 
     public GenericRecipeBuilder withAuxiliaryIngredient(final Block block) {
-        return this.withAuxiliaryIngredient(new ItemStack(Objects.requireNonNull(block, "block")));
+        return this.withAuxiliaryIngredient(new ItemStackTemplate(Objects.requireNonNull(block, "block").asItem()));
     }
 
     public GenericRecipeBuilder withAuxiliaryIngredient(final Block block, final boolean isRequired, final int limit) {
-        return this.withAuxiliaryIngredient(new ItemStack(Objects.requireNonNull(block, "block")), isRequired, limit);
+        return this.withAuxiliaryIngredient(new ItemStackTemplate(Objects.requireNonNull(block, "block").asItem()), isRequired, limit);
     }
 
-    public GenericRecipeBuilder withAuxiliaryIngredient(final ItemStack stack) {
+    public GenericRecipeBuilder withAuxiliaryIngredient(final ItemStackTemplate stack) {
         return this.withAuxiliaryIngredient(Objects.requireNonNull(stack, "stack"), false, 1);
     }
 
-    public GenericRecipeBuilder withAuxiliaryIngredient(final ItemStack stack, final boolean isRequired, final int limit) {
-        return this.withDirectAuxiliaryIngredient(provider -> new InertBasicAuxiliaryIngredient(DefaultCustomIngredients.components(Objects.requireNonNull(stack, "stack")), isRequired, limit));
+    public GenericRecipeBuilder withAuxiliaryIngredient(final ItemStackTemplate stack, final boolean isRequired, final int limit) {
+        Ingredient ingredient = Ingredient.of(stack.item().value());
+        if (!stack.components().isEmpty())
+            ingredient = DefaultCustomIngredients.components(ingredient, stack.components());
+        return this.withAuxiliaryIngredient(new InertBasicAuxiliaryIngredient(ingredient, isRequired, limit));
     }
 
     public GenericRecipeBuilder withAuxiliaryIngredient(final TagKey<Item> tag) {
@@ -184,14 +193,14 @@ public final class GenericRecipeBuilder {
         int output = -1;
         for (int i = 0; i < this.shape.length; i++) {
             final char key = this.shape[i];
-            var ingredient = this.ingredients.get(key).apply(registries);
+            var ingredient = this.ingredients.get(key);
             if (ingredient == null) {
                 if (key != EMPTY_SPACE) {
                     throw new IllegalArgumentException("An ingredient is missing for the shape, \"" + key + "\"");
                 }
-                ingredient = GenericRecipe.EMPTY;
+                ingredient = _ -> GenericRecipe.EMPTY;
             }
-            ingredients[i] = ingredient;
+            ingredients[i] = ingredient.apply(registries);
             if (output == -1 && key == this.outputChar) {
                 output = i;
             }
@@ -200,6 +209,6 @@ public final class GenericRecipeBuilder {
             .stream()
             .map(e -> e.apply(registries))
             .toArray(AuxiliaryIngredient<?>[]::new);
-        return new GenericRecipe(this.serializer, this.output, ingredients, auxiliaryIngredients, this.width, this.height, output);
+        return new GenericRecipe(this.serializer.get(), this.output, ingredients, auxiliaryIngredients, this.width, this.height, output);
     }
 }

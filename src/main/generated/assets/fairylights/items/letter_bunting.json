@@ -1,0 +1,24 @@
+{
+  "model": {
+    "type": "minecraft:model",
+    "model": "fairylights:item/letter_bunting",
+    "tints": [
+      {
+        "type": "minecraft:constant",
+        "value": -1
+      },
+      {
+        "type": "fairylights:styled_string",
+        "index": 1
+      },
+      {
+        "type": "fairylights:styled_string",
+        "index": 2
+      },
+      {
+        "type": "fairylights:styled_string",
+        "index": 3
+      }
+    ]
+  }
+}

@@ -1,0 +1,23 @@
+{
+  "model": {
+    "type": "minecraft:model",
+    "model": "fairylights:item/hanging_lights",
+    "tints": [
+      {
+        "type": "fairylights:string_type"
+      },
+      {
+        "type": "fairylights:pattern_or_default",
+        "index": 1
+      },
+      {
+        "type": "fairylights:pattern_or_default",
+        "index": 2
+      },
+      {
+        "type": "fairylights:pattern_or_default",
+        "index": 3
+      }
+    ]
+  }
+}

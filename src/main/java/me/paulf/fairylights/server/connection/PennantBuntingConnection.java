@@ -67,7 +67,7 @@ public final class PennantBuntingConnection extends HangingFeatureConnection<Pen
                 ItemHandlerHelper.giveItemToPlayer(player, pennant);
                 this.computeCatenary();
                 heldStack.shrink(1);
-                this.world.playSound(null, hit.x, hit.y, hit.z, FLSounds.FEATURE_COLOR_CHANGE.get(), SoundSource.BLOCKS, 1, 1);
+                this.world.playSound(null, hit.x, hit.y, hit.z, FLSounds.FEATURE_COLOR_CHANGE, SoundSource.BLOCKS, 1, 1);
                 return true;
             }
         }

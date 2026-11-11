@@ -3,7 +3,7 @@
   "criteria": {
     "has_the_recipe": {
       "conditions": {
-        "recipe": "fairylights:spider_light"
+        "recipes": "fairylights:spider_light"
       },
       "trigger": "minecraft:recipe_unlocked"
     }

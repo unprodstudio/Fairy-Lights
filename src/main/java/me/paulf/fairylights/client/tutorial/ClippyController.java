@@ -24,6 +24,7 @@ import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import org.jspecify.annotations.Nullable;
 
+import java.util.Optional;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
@@ -118,7 +119,7 @@ public class ClippyController {
             if (!player.getInventory().contains(FLCraftingRecipes.LIGHTS) &&
                     !player.getInventory().getSelectedItem().is(FLCraftingRecipes.LIGHTS)) {
                 controller.setState(new NoProgressState());
-            } else if (FLItems.HANGING_LIGHTS.toOptional().filter(i ->
+            } else if (Optional.of(FLItems.HANGING_LIGHTS).filter(i ->
                     player.getInventory().getSelectedItem().getItem() == i ||
                     player.getInventory().contains(new ItemStack(i)) ||
                     player.getStats().getValue(Stats.ITEM_CRAFTED.get(i)) > 0).isPresent()) {

@@ -29,7 +29,7 @@ public class LightBlockEntity extends BlockEntity {
     private boolean on = true;
 
     public LightBlockEntity(BlockPos pos, BlockState state) {
-        super(FLBlockEntities.LIGHT.get(), pos, state);
+        super(FLBlockEntities.LIGHT, pos, state);
         this.light = new Light<>(0, Vec3.ZERO, 0.0F, 0.0F, ItemStack.EMPTY, SimpleLightVariant.FAIRY_LIGHT, 0.0F);
     }
 
@@ -55,10 +55,10 @@ public class LightBlockEntity extends BlockEntity {
         final SoundEvent lightSnd;
         final float pitch;
         if (this.on) {
-            lightSnd = FLSounds.FEATURE_LIGHT_TURNON.get();
+            lightSnd = FLSounds.FEATURE_LIGHT_TURNON;
             pitch = 0.6F;
         } else {
-            lightSnd = FLSounds.FEATURE_LIGHT_TURNOFF.get();
+            lightSnd = FLSounds.FEATURE_LIGHT_TURNOFF;
             pitch = 0.5F;
         }
         this.level.playSound(null, pos, lightSnd, SoundSource.BLOCKS, 1.0F, pitch);

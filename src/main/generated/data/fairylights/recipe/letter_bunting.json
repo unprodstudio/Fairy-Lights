@@ -1,22 +1,11 @@
 {
   "type": "minecraft:crafting_shaped",
-  "category": "misc",
   "key": {
-    "-": {
-      "tag": "c:strings"
-    },
-    "B": {
-      "item": "minecraft:ink_sac"
-    },
-    "F": {
-      "tag": "c:feathers"
-    },
-    "I": {
-      "tag": "c:ingots/iron"
-    },
-    "P": {
-      "item": "minecraft:paper"
-    }
+    "-": "#c:strings",
+    "B": "minecraft:ink_sac",
+    "F": "#c:feathers",
+    "I": "#c:ingots/iron",
+    "P": "minecraft:paper"
   },
   "pattern": [
     "I-I",
@@ -24,12 +13,8 @@
   ],
   "result": {
     "components": {
-      "fairylights:styled_string": {
-        "styling": [],
-        "value": ""
-      }
+      "fairylights:styled_string": ""
     },
-    "count": 1,
     "id": "fairylights:letter_bunting"
   }
 }

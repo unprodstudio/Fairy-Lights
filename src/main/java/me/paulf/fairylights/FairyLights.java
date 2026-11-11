@@ -69,21 +69,21 @@ public final class FairyLights implements ModInitializer {
         ServerPlayNetworking.registerGlobalReceiver(EditLetteredConnectionMessage.TYPE, new EditLetteredConnectionMessage.Handler());
 
         FLComponents.init();
-        FLSounds.REG.register();
-        FLBlocks.REG.register();
-        FLEntities.REG.register();
-        FLItems.REG.register();
-        FLBlockEntities.REG.register();
-        FLCraftingRecipes.REG.register();
-        ConnectionTypes.REG.register();
-        StringTypes.REG.register();
+        FLSounds.register();
+        FLBlocks.register();
+        FLEntities.register();
+        FLItems.register();
+        FLBlockEntities.register();
+        FLCraftingRecipes.register();
+        ConnectionTypes.register();
+        StringTypes.register();
 
         if (FabricLoader.getInstance().getEnvironmentType() == EnvType.CLIENT) {
             (new ClientProxy()).init();
         } else {
             (new ServerProxy()).init();
         }
-        FairyLightsItemGroup.TAB_REG.register();
+        FairyLightsItemGroup.register();
     }
 
 

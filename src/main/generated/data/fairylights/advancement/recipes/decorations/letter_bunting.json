@@ -23,7 +23,7 @@
     },
     "has_the_recipe": {
       "conditions": {
-        "recipe": "fairylights:letter_bunting"
+        "recipes": "fairylights:letter_bunting"
       },
       "trigger": "minecraft:recipe_unlocked"
     }

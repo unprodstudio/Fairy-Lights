@@ -3,7 +3,7 @@
   "criteria": {
     "has_the_recipe": {
       "conditions": {
-        "recipe": "fairylights:icicle_lights"
+        "recipes": "fairylights:icicle_lights"
       },
       "trigger": "minecraft:recipe_unlocked"
     }

@@ -19,7 +19,7 @@ import java.util.Optional;
 
 public final class FastenerBlockEntity extends BlockEntity {
     public FastenerBlockEntity(final BlockPos pos, final BlockState state) {
-        super(FLBlockEntities.FASTENER.get(), pos ,state);
+        super(FLBlockEntities.FASTENER, pos ,state);
     }
 
     public AABB getRenderBoundingBox() {
@@ -38,12 +38,12 @@ public final class FastenerBlockEntity extends BlockEntity {
     }
 
     public Vec3 getOffset() {
-        return FLBlocks.FASTENER.get().getOffset(this.getFacing(), 0.125F);
+        return FLBlocks.FASTENER.getOffset(this.getFacing(), 0.125F);
     }
 
     public Direction getFacing() {
         final BlockState state = this.level.getBlockState(this.worldPosition);
-        if (state.getBlock() != FLBlocks.FASTENER.get()) {
+        if (state.getBlock() != FLBlocks.FASTENER) {
             return Direction.UP;
         }
         return state.getValue(FastenerBlock.FACING);

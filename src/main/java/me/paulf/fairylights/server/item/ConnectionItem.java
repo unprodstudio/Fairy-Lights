@@ -1,6 +1,5 @@
 package me.paulf.fairylights.server.item;
 
-import dev.architectury.registry.registries.RegistrySupplier;
 import me.paulf.fairylights.server.block.FLBlocks;
 import me.paulf.fairylights.server.block.FastenerBlock;
 import me.paulf.fairylights.server.capability.CapabilityHandler;
@@ -35,15 +34,15 @@ import net.minecraft.world.phys.Vec3;
 import java.util.Optional;
 
 public abstract class ConnectionItem extends Item {
-    private final RegistrySupplier<? extends ConnectionType<?>> type;
+    private final ConnectionType<?> type;
 
-    public ConnectionItem(final Properties properties, final RegistrySupplier<? extends ConnectionType<?>> type) {
+    public ConnectionItem(final Properties properties, final ConnectionType<?> type) {
         super(properties);
         this.type = type;
     }
 
     public final ConnectionType<?> getConnectionType() {
-        return (ConnectionType<?>) this.type.get();
+        return this.type;
     }
 
     @Override
@@ -55,7 +54,7 @@ public abstract class ConnectionItem extends Item {
         final Level world = context.getLevel();
         final Direction side = context.getClickedFace();
         final BlockPos clickPos = context.getClickedPos();
-        final Block fastener = FLBlocks.FASTENER.get();
+        final Block fastener = FLBlocks.FASTENER;
         final ItemStack stack = context.getItemInHand();
         if (this.isConnectionInOtherHand(world, user, stack)) {
             return InteractionResult.PASS;
@@ -148,7 +147,7 @@ public abstract class ConnectionItem extends Item {
             }
             if (playSound) {
                 final Vec3 pos = fastener.getConnectionPoint();
-                world.playSound(null, pos.x, pos.y, pos.z, FLSounds.CORD_CONNECT.get(), SoundSource.BLOCKS, 1.0F, 1.0F);
+                world.playSound(null, pos.x, pos.y, pos.z, FLSounds.CORD_CONNECT, SoundSource.BLOCKS, 1.0F, 1.0F);
             }
         });
     }

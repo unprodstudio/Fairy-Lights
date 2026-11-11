@@ -1,4 +1,3 @@
 {
-  "type": "minecraft:block",
-  "random_sequence": "fairylights:blocks/candle_lantern_light"
+  "type": "minecraft:block"
 }

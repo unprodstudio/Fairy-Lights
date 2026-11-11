@@ -65,23 +65,23 @@ public final class DataGatherer implements DataGeneratorEntrypoint {
         @Override
         public void generateItemModels(ItemModelGenerators generator) {
             List.of(
-                FLItems.FAIRY_LIGHT.get(),
-                FLItems.PAPER_LANTERN.get(),
-                FLItems.ORB_LANTERN.get(),
-                FLItems.FLOWER_LIGHT.get(),
-                FLItems.CANDLE_LANTERN_LIGHT.get(),
-                FLItems.OIL_LANTERN_LIGHT.get(),
-                FLItems.JACK_O_LANTERN.get(),
-                FLItems.SKULL_LIGHT.get(),
-                FLItems.GHOST_LIGHT.get(),
-                FLItems.SPIDER_LIGHT.get(),
-                FLItems.WITCH_LIGHT.get(),
-                FLItems.SNOWFLAKE_LIGHT.get(),
-                FLItems.HEART_LIGHT.get(),
-                FLItems.MOON_LIGHT.get(),
-                FLItems.STAR_LIGHT.get(),
-                FLItems.ICICLE_LIGHTS.get(),
-                FLItems.METEOR_LIGHT.get()
+                FLItems.FAIRY_LIGHT,
+                FLItems.PAPER_LANTERN,
+                FLItems.ORB_LANTERN,
+                FLItems.FLOWER_LIGHT,
+                FLItems.CANDLE_LANTERN_LIGHT,
+                FLItems.OIL_LANTERN_LIGHT,
+                FLItems.JACK_O_LANTERN,
+                FLItems.SKULL_LIGHT,
+                FLItems.GHOST_LIGHT,
+                FLItems.SPIDER_LIGHT,
+                FLItems.WITCH_LIGHT,
+                FLItems.SNOWFLAKE_LIGHT,
+                FLItems.HEART_LIGHT,
+                FLItems.MOON_LIGHT,
+                FLItems.STAR_LIGHT,
+                FLItems.ICICLE_LIGHTS,
+                FLItems.METEOR_LIGHT
             )
                 .forEach(item -> {
                     item(generator, item, List.of(
@@ -90,18 +90,18 @@ public final class DataGatherer implements DataGeneratorEntrypoint {
                     ));
                 });
 
-            item(generator, FLItems.HANGING_LIGHTS.get(), List.of(
+            item(generator, FLItems.HANGING_LIGHTS, List.of(
                 new StringTypeBasedItemTintSource(),
                 new PatternOrDefaultItemTintSource(1),
                 new PatternOrDefaultItemTintSource(2),
                 new PatternOrDefaultItemTintSource(3)
             ));
 
-            item(generator, FLItems.TINSEL.get(), List.of(
+            item(generator, FLItems.TINSEL, List.of(
                 new Dye(0xFFFFFFFF)
             ));
 
-            item(generator, FLItems.PENNANT_BUNTING.get(), List.of(
+            item(generator, FLItems.PENNANT_BUNTING, List.of(
                 new Dye(0xFFFFFFFF),
                 new PatternItemTintSource(1),
                 new PatternItemTintSource(2),
@@ -110,12 +110,12 @@ public final class DataGatherer implements DataGeneratorEntrypoint {
 
             List<ItemTintSource> secondLayerColor = List.of(new Constant(0xFFFFFFFF), new Dye(0xFFFFFFFF));
 
-            item(generator, FLItems.TRIANGLE_PENNANT.get(), secondLayerColor);
-            item(generator, FLItems.SPEARHEAD_PENNANT.get(), secondLayerColor);
-            item(generator, FLItems.SWALLOWTAIL_PENNANT.get(), secondLayerColor);
-            item(generator, FLItems.SQUARE_PENNANT.get(), secondLayerColor);
+            item(generator, FLItems.TRIANGLE_PENNANT, secondLayerColor);
+            item(generator, FLItems.SPEARHEAD_PENNANT, secondLayerColor);
+            item(generator, FLItems.SWALLOWTAIL_PENNANT, secondLayerColor);
+            item(generator, FLItems.SQUARE_PENNANT, secondLayerColor);
 
-            item(generator, FLItems.LETTER_BUNTING.get(), List.of(
+            item(generator, FLItems.LETTER_BUNTING, List.of(
                 new Constant(0xFFFFFFFF),
                 new StyledStringItemTintSource(1),
                 new StyledStringItemTintSource(2),
@@ -155,7 +155,7 @@ public final class DataGatherer implements DataGeneratorEntrypoint {
                         .set(FLComponents.STYLED_STRING, Component.empty())
                         .build();
                     var items = registries.lookupOrThrow(Registries.ITEM);
-                    shaped(items, RecipeCategory.DECORATIONS, FLItems.LETTER_BUNTING.get(), components)
+                    shaped(items, RecipeCategory.DECORATIONS, FLItems.LETTER_BUNTING, components)
                         .pattern("I-I")
                         .pattern("PBF")
                         .define('I', ConventionalItemTags.IRON_INGOTS)
@@ -166,14 +166,14 @@ public final class DataGatherer implements DataGeneratorEntrypoint {
                         .unlockedBy("has_iron", has(ConventionalItemTags.IRON_INGOTS))
                         .unlockedBy("has_string", has(ConventionalItemTags.STRINGS))
                         .save(output);
-                    ShapedRecipeBuilder.shaped(items, RecipeCategory.DECORATIONS,FLItems.GARLAND.get(), 2)
+                    ShapedRecipeBuilder.shaped(items, RecipeCategory.DECORATIONS,FLItems.GARLAND, 2)
                         .pattern("I-I")
                         .define('I', ConventionalItemTags.IRON_INGOTS)
                         .define('-', Items.VINE)
                         .unlockedBy("has_iron", has(ConventionalItemTags.IRON_INGOTS))
                         .unlockedBy("has_vine", has(Items.VINE))
                         .save(output);
-                    ShapedRecipeBuilder.shaped(items, RecipeCategory.DECORATIONS,FLItems.OIL_LANTERN.get(), 4)
+                    ShapedRecipeBuilder.shaped(items, RecipeCategory.DECORATIONS,FLItems.OIL_LANTERN, 4)
                         .pattern(" I ")
                         .pattern("STS")
                         .pattern("IGI")
@@ -184,7 +184,7 @@ public final class DataGatherer implements DataGeneratorEntrypoint {
                         .unlockedBy("has_iron", has(ConventionalItemTags.IRON_INGOTS))
                         .unlockedBy("has_torch", has(Items.TORCH))
                         .save(output);
-                    ShapedRecipeBuilder.shaped(items, RecipeCategory.DECORATIONS,FLItems.CANDLE_LANTERN.get(), 4)
+                    ShapedRecipeBuilder.shaped(items, RecipeCategory.DECORATIONS,FLItems.CANDLE_LANTERN, 4)
                         .pattern(" I ")
                         .pattern("GTG")
                         .pattern("IGI")
@@ -194,7 +194,7 @@ public final class DataGatherer implements DataGeneratorEntrypoint {
                         .unlockedBy("has_iron", has(ConventionalItemTags.IRON_INGOTS))
                         .unlockedBy("has_torch", has(Items.TORCH))
                         .save(output);
-                    ShapedRecipeBuilder.shaped(items, RecipeCategory.DECORATIONS,FLItems.INCANDESCENT_LIGHT.get(), 4)
+                    ShapedRecipeBuilder.shaped(items, RecipeCategory.DECORATIONS,FLItems.INCANDESCENT_LIGHT, 4)
                         .pattern(" I ")
                         .pattern("ITI")
                         .pattern(" G ")
@@ -204,70 +204,70 @@ public final class DataGatherer implements DataGeneratorEntrypoint {
                         .unlockedBy("has_iron", has(ConventionalItemTags.IRON_INGOTS))
                         .unlockedBy("has_torch", has(Items.TORCH))
                         .save(output);
-                    GenericRecipeBuilder.customRecipe(FLCraftingRecipes.HANGING_LIGHTS.get())
+                    GenericRecipeBuilder.customRecipe(FLCraftingRecipes.HANGING_LIGHTS)
                         .unlockedBy("has_lights", has(FLCraftingRecipes.LIGHTS))
-                        .build(output, FairyLights.id("hanging_lights"));
-                    GenericRecipeBuilder.customRecipe(FLCraftingRecipes.HANGING_LIGHTS_AUGMENTATION.get())
-                        .build(output, FairyLights.id("hanging_lights_augmentation"));
-                    GenericRecipeBuilder.customRecipe(FLCraftingRecipes.TINSEL_GARLAND.get())
+                        .build(output, registries, FairyLights.id("hanging_lights"));
+                    GenericRecipeBuilder.customRecipe(FLCraftingRecipes.HANGING_LIGHTS_AUGMENTATION)
+                        .build(output, registries, FairyLights.id("hanging_lights_augmentation"));
+                    GenericRecipeBuilder.customRecipe(FLCraftingRecipes.TINSEL_GARLAND)
                         .unlockedBy("has_iron", has(ConventionalItemTags.IRON_INGOTS))
                         .unlockedBy("has_string", has(ConventionalItemTags.STRINGS))
-                        .build(output, FairyLights.id("tinsel_garland"));
-                    GenericRecipeBuilder.customRecipe(FLCraftingRecipes.PENNANT_BUNTING.get())
+                        .build(output, registries, FairyLights.id("tinsel_garland"));
+                    GenericRecipeBuilder.customRecipe(FLCraftingRecipes.PENNANT_BUNTING)
                         .unlockedBy("has_pennants", has(FLCraftingRecipes.PENNANTS))
-                        .build(output, FairyLights.id("pennant_bunting"));
-                    GenericRecipeBuilder.customRecipe(FLCraftingRecipes.PENNANT_BUNTING_AUGMENTATION.get())
-                        .build(output, FairyLights.id("pennant_bunting_augmentation"));
-                    GenericRecipeBuilder.customRecipe(FLCraftingRecipes.EDIT_COLOR.get())
-                        .build(output, FairyLights.id("edit_color"));
-                    GenericRecipeBuilder.customRecipe(FLCraftingRecipes.COPY_COLOR.get())
-                        .build(output, FairyLights.id("copy_color"));
-                    this.pennantRecipe(FLCraftingRecipes.TRIANGLE_PENNANT.get())
-                        .build(output, FairyLights.id("triangle_pennant"));
-                    this.pennantRecipe(FLCraftingRecipes.SPEARHEAD_PENNANT.get())
-                        .build(output, FairyLights.id("spearhead_pennant"));
-                    this.pennantRecipe(FLCraftingRecipes.SWALLOWTAIL_PENNANT.get())
-                        .build(output, FairyLights.id("swallowtail_pennant"));
-                    this.pennantRecipe(FLCraftingRecipes.SQUARE_PENNANT.get())
-                        .build(output, FairyLights.id("square_pennant"));
-                    this.lightRecipe(FLCraftingRecipes.FAIRY_LIGHT.get())
-                        .build(output, FairyLights.id("fairy_light"));
-                    this.lightRecipe(FLCraftingRecipes.PAPER_LANTERN.get())
-                        .build(output, FairyLights.id("paper_lantern"));
-                    this.lightRecipe(FLCraftingRecipes.ORB_LANTERN.get())
-                        .build(output, FairyLights.id("orb_lantern"));
-                    this.lightRecipe(FLCraftingRecipes.FLOWER_LIGHT.get())
-                        .build(output, FairyLights.id("flower_light"));
-                    this.lightRecipe(FLCraftingRecipes.CANDLE_LANTERN_LIGHT.get())
-                        .build(output, FairyLights.id("candle_lantern_light"));
-                    this.lightRecipe(FLCraftingRecipes.OIL_LANTERN_LIGHT.get())
-                        .build(output, FairyLights.id("oil_lantern_light"));
-                    this.lightRecipe(FLCraftingRecipes.JACK_O_LANTERN.get())
-                        .build(output, FairyLights.id("jack_o_lantern"));
-                    this.lightRecipe(FLCraftingRecipes.SKULL_LIGHT.get())
-                        .build(output, FairyLights.id("skull_light"));
-                    this.lightRecipe(FLCraftingRecipes.GHOST_LIGHT.get())
-                        .build(output, FairyLights.id("ghost_light"));
-                    this.lightRecipe(FLCraftingRecipes.SPIDER_LIGHT.get())
-                        .build(output, FairyLights.id("spider_light"));
-                    this.lightRecipe(FLCraftingRecipes.WITCH_LIGHT.get())
-                        .build(output, FairyLights.id("witch_light"));
-                    this.lightRecipe(FLCraftingRecipes.SNOWFLAKE_LIGHT.get())
-                        .build(output, FairyLights.id("snowflake_light"));
-                    this.lightRecipe(FLCraftingRecipes.HEART_LIGHT.get())
-                        .build(output, FairyLights.id("heart_light"));
-                    this.lightRecipe(FLCraftingRecipes.MOON_LIGHT.get())
-                        .build(output, FairyLights.id("moon_light"));
-                    this.lightRecipe(FLCraftingRecipes.STAR_LIGHT.get())
-                        .build(output, FairyLights.id("star_light"));
-                    this.lightRecipe(FLCraftingRecipes.ICICLE_LIGHTS.get())
-                        .build(output, FairyLights.id("icicle_lights"));
-                    this.lightRecipe(FLCraftingRecipes.METEOR_LIGHT.get())
-                        .build(output, FairyLights.id("meteor_light"));
-                    GenericRecipeBuilder.customRecipe(FLCraftingRecipes.LIGHT_TWINKLE.get())
-                        .build(output, FairyLights.id("light_twinkle"));
-                    GenericRecipeBuilder.customRecipe(FLCraftingRecipes.COLOR_CHANGING_LIGHT.get())
-                        .build(output, FairyLights.id("color_changing_light"));
+                        .build(output, registries, FairyLights.id("pennant_bunting"));
+                    GenericRecipeBuilder.customRecipe(FLCraftingRecipes.PENNANT_BUNTING_AUGMENTATION)
+                        .build(output, registries, FairyLights.id("pennant_bunting_augmentation"));
+                    GenericRecipeBuilder.customRecipe(FLCraftingRecipes.EDIT_COLOR)
+                        .build(output, registries, FairyLights.id("edit_color"));
+                    GenericRecipeBuilder.customRecipe(FLCraftingRecipes.COPY_COLOR)
+                        .build(output, registries, FairyLights.id("copy_color"));
+                    this.pennantRecipe(FLCraftingRecipes.TRIANGLE_PENNANT)
+                        .build(output, registries, FairyLights.id("triangle_pennant"));
+                    this.pennantRecipe(FLCraftingRecipes.SPEARHEAD_PENNANT)
+                        .build(output, registries, FairyLights.id("spearhead_pennant"));
+                    this.pennantRecipe(FLCraftingRecipes.SWALLOWTAIL_PENNANT)
+                        .build(output, registries, FairyLights.id("swallowtail_pennant"));
+                    this.pennantRecipe(FLCraftingRecipes.SQUARE_PENNANT)
+                        .build(output, registries, FairyLights.id("square_pennant"));
+                    this.lightRecipe(FLCraftingRecipes.FAIRY_LIGHT)
+                        .build(output, registries, FairyLights.id("fairy_light"));
+                    this.lightRecipe(FLCraftingRecipes.PAPER_LANTERN)
+                        .build(output, registries, FairyLights.id("paper_lantern"));
+                    this.lightRecipe(FLCraftingRecipes.ORB_LANTERN)
+                        .build(output, registries, FairyLights.id("orb_lantern"));
+                    this.lightRecipe(FLCraftingRecipes.FLOWER_LIGHT)
+                        .build(output, registries, FairyLights.id("flower_light"));
+                    this.lightRecipe(FLCraftingRecipes.CANDLE_LANTERN_LIGHT)
+                        .build(output, registries, FairyLights.id("candle_lantern_light"));
+                    this.lightRecipe(FLCraftingRecipes.OIL_LANTERN_LIGHT)
+                        .build(output, registries, FairyLights.id("oil_lantern_light"));
+                    this.lightRecipe(FLCraftingRecipes.JACK_O_LANTERN)
+                        .build(output, registries, FairyLights.id("jack_o_lantern"));
+                    this.lightRecipe(FLCraftingRecipes.SKULL_LIGHT)
+                        .build(output, registries, FairyLights.id("skull_light"));
+                    this.lightRecipe(FLCraftingRecipes.GHOST_LIGHT)
+                        .build(output, registries, FairyLights.id("ghost_light"));
+                    this.lightRecipe(FLCraftingRecipes.SPIDER_LIGHT)
+                        .build(output, registries, FairyLights.id("spider_light"));
+                    this.lightRecipe(FLCraftingRecipes.WITCH_LIGHT)
+                        .build(output, registries, FairyLights.id("witch_light"));
+                    this.lightRecipe(FLCraftingRecipes.SNOWFLAKE_LIGHT)
+                        .build(output, registries, FairyLights.id("snowflake_light"));
+                    this.lightRecipe(FLCraftingRecipes.HEART_LIGHT)
+                        .build(output, registries, FairyLights.id("heart_light"));
+                    this.lightRecipe(FLCraftingRecipes.MOON_LIGHT)
+                        .build(output, registries, FairyLights.id("moon_light"));
+                    this.lightRecipe(FLCraftingRecipes.STAR_LIGHT)
+                        .build(output, registries, FairyLights.id("star_light"));
+                    this.lightRecipe(FLCraftingRecipes.ICICLE_LIGHTS)
+                        .build(output, registries, FairyLights.id("icicle_lights"));
+                    this.lightRecipe(FLCraftingRecipes.METEOR_LIGHT)
+                        .build(output, registries, FairyLights.id("meteor_light"));
+                    GenericRecipeBuilder.customRecipe(FLCraftingRecipes.LIGHT_TWINKLE)
+                        .build(output, registries, FairyLights.id("light_twinkle"));
+                    GenericRecipeBuilder.customRecipe(FLCraftingRecipes.COLOR_CHANGING_LIGHT)
+                        .build(output, registries, FairyLights.id("color_changing_light"));
                 }
 
                 GenericRecipeBuilder lightRecipe(final RecipeSerializer<?> serializer) {
@@ -300,27 +300,27 @@ public final class DataGatherer implements DataGeneratorEntrypoint {
         @Override
         public void generate()
         {
-            this.add(FLBlocks.FASTENER.get(), noDrop());
-            this.add(FLBlocks.FAIRY_LIGHT.get(), noDrop());
-            this.add(FLBlocks.PAPER_LANTERN.get(), noDrop());
-            this.add(FLBlocks.ORB_LANTERN.get(), noDrop());
-            this.add(FLBlocks.FLOWER_LIGHT.get(), noDrop());
-            this.add(FLBlocks.CANDLE_LANTERN_LIGHT.get(), noDrop());
-            this.add(FLBlocks.OIL_LANTERN_LIGHT.get(), noDrop());
-            this.add(FLBlocks.JACK_O_LANTERN.get(), noDrop());
-            this.add(FLBlocks.SKULL_LIGHT.get(), noDrop());
-            this.add(FLBlocks.GHOST_LIGHT.get(), noDrop());
-            this.add(FLBlocks.SPIDER_LIGHT.get(), noDrop());
-            this.add(FLBlocks.WITCH_LIGHT.get(), noDrop());
-            this.add(FLBlocks.SNOWFLAKE_LIGHT.get(), noDrop());
-            this.add(FLBlocks.HEART_LIGHT.get(), noDrop());
-            this.add(FLBlocks.MOON_LIGHT.get(), noDrop());
-            this.add(FLBlocks.STAR_LIGHT.get(), noDrop());
-            this.add(FLBlocks.ICICLE_LIGHTS.get(), noDrop());
-            this.add(FLBlocks.METEOR_LIGHT.get(), noDrop());
-            this.add(FLBlocks.OIL_LANTERN.get(), noDrop());
-            this.add(FLBlocks.CANDLE_LANTERN.get(), noDrop());
-            this.add(FLBlocks.INCANDESCENT_LIGHT.get(), noDrop());
+            this.add(FLBlocks.FASTENER, noDrop());
+            this.add(FLBlocks.FAIRY_LIGHT, noDrop());
+            this.add(FLBlocks.PAPER_LANTERN, noDrop());
+            this.add(FLBlocks.ORB_LANTERN, noDrop());
+            this.add(FLBlocks.FLOWER_LIGHT, noDrop());
+            this.add(FLBlocks.CANDLE_LANTERN_LIGHT, noDrop());
+            this.add(FLBlocks.OIL_LANTERN_LIGHT, noDrop());
+            this.add(FLBlocks.JACK_O_LANTERN, noDrop());
+            this.add(FLBlocks.SKULL_LIGHT, noDrop());
+            this.add(FLBlocks.GHOST_LIGHT, noDrop());
+            this.add(FLBlocks.SPIDER_LIGHT, noDrop());
+            this.add(FLBlocks.WITCH_LIGHT, noDrop());
+            this.add(FLBlocks.SNOWFLAKE_LIGHT, noDrop());
+            this.add(FLBlocks.HEART_LIGHT, noDrop());
+            this.add(FLBlocks.MOON_LIGHT, noDrop());
+            this.add(FLBlocks.STAR_LIGHT, noDrop());
+            this.add(FLBlocks.ICICLE_LIGHTS, noDrop());
+            this.add(FLBlocks.METEOR_LIGHT, noDrop());
+            this.add(FLBlocks.OIL_LANTERN, noDrop());
+            this.add(FLBlocks.CANDLE_LANTERN, noDrop());
+            this.add(FLBlocks.INCANDESCENT_LIGHT, noDrop());
         }
     }
 }

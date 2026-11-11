@@ -1,13 +1,8 @@
 {
   "type": "minecraft:crafting_shaped",
-  "category": "misc",
   "key": {
-    "-": {
-      "item": "minecraft:vine"
-    },
-    "I": {
-      "tag": "c:ingots/iron"
-    }
+    "-": "minecraft:vine",
+    "I": "#c:ingots/iron"
   },
   "pattern": [
     "I-I"

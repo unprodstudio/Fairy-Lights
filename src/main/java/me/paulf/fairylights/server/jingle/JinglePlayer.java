@@ -220,7 +220,7 @@ public final class JinglePlayer {
             for (final int note : playTick.getNotes()) {
                 final int idx = note - this.jingle.getLowestNote() + this.lightOffset;
                 if (idx >= 0 && idx < lights.length) {
-                    lights[idx].jingle(world, origin, note, FLSounds.JINGLE_BELL.get(), this.noteParticle);
+                    lights[idx].jingle(world, origin, note, FLSounds.JINGLE_BELL, this.noteParticle);
                 }
             }
         }

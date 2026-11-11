@@ -16,9 +16,11 @@ import net.minecraft.core.HolderSet;
 import net.minecraft.core.NonNullList;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.ItemStackTemplate;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.item.crafting.*;
 import net.minecraft.world.level.Level;
+import org.jspecify.annotations.Nullable;
 
 import java.util.*;
 import java.util.function.IntUnaryOperator;
@@ -27,9 +29,9 @@ import java.util.function.Supplier;
 public final class GenericRecipe extends CustomRecipe {
     public static final EmptyRegularIngredient EMPTY = new EmptyRegularIngredient();
 
-    private final Supplier<? extends RecipeSerializer<GenericRecipe>> serializer;
+    private final RecipeSerializer<GenericRecipe> serializer;
 
-    private final ItemStack output;
+    @Nullable private final ItemStackTemplate output;
 
     private final RegularIngredient[] ingredients;
 
@@ -47,12 +49,12 @@ public final class GenericRecipe extends CustomRecipe {
 
     private int room;
 
-    GenericRecipe(final Supplier<? extends RecipeSerializer<GenericRecipe>> serializer, final ItemStack output, final RegularIngredient[] ingredients, final AuxiliaryIngredient<?>[] auxiliaryIngredients, final int width, final int height, final int outputIngredient) {
+    GenericRecipe(final RecipeSerializer<GenericRecipe> serializer, @Nullable final ItemStackTemplate output, final RegularIngredient[] ingredients, final AuxiliaryIngredient<?>[] auxiliaryIngredients, final int width, final int height, final int outputIngredient) {
         super();
         Preconditions.checkArgument(width > 0, "width must be greater than zero");
         Preconditions.checkArgument(height > 0, "height must be greater than zero");
         this.serializer = Objects.requireNonNull(serializer, "serializer");
-        this.output = Objects.requireNonNull(output, "output");
+        this.output = output;
         this.ingredients = Objects.requireNonNull(ingredients, "ingredients");
         this.auxiliaryIngredients = checkIngredients(ingredients, Objects.requireNonNull(auxiliaryIngredients, "auxiliaryIngredients"));
         this.width = width;
@@ -105,16 +107,16 @@ public final class GenericRecipe extends CustomRecipe {
 
     @Override
     public boolean isSpecial() {
-        return this.output.isEmpty();
+        return this.output != null;
     }
 
     @Override
     public RecipeSerializer<? extends CustomRecipe> getSerializer() {
-        return this.serializer.get();
+        return this.serializer;
     }
 
     public ItemStack getOutput() {
-        return this.output.copy();
+        return this.output.create();
     }
 
     public RegularIngredient[] getGenericIngredients() {
@@ -172,7 +174,7 @@ public final class GenericRecipe extends CustomRecipe {
         final Map<AuxiliaryIngredient<?>, Integer> auxMatchTotals = new HashMap<>();
         final Set<GenericIngredient<?, ?>> presentCalled = new HashSet<>();
         final List<MatchResultAuxiliary> auxResults = new ArrayList<>();
-        Item item = this.output.getItem();
+        Item item = Optional.ofNullable(this.output).map(template -> template.create().getItem()).orElse(Items.AIR);
         final ModifiableDataComponentMap components = new ModifiableDataComponentMap();
         for (int i = 0, w = inventory.width(), size = w * inventory.height(); i < size; i++) {
             final int x = i % w;
@@ -228,7 +230,7 @@ public final class GenericRecipe extends CustomRecipe {
                 return ItemStack.EMPTY;
             }
         }
-        final ItemStack output = this.output.isEmpty() ? new ItemStack(item) : this.output.copy();
+        final ItemStack output = this.output == null ? new ItemStack(item) : this.output.create();
         if (!components.isEmpty()) {
             output.applyComponents(components);
         }

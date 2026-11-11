@@ -3,7 +3,7 @@
   "criteria": {
     "has_the_recipe": {
       "conditions": {
-        "recipe": "fairylights:spearhead_pennant"
+        "recipes": "fairylights:spearhead_pennant"
       },
       "trigger": "minecraft:recipe_unlocked"
     }

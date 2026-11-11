@@ -1,8 +1,5 @@
 package me.paulf.fairylights.client;
 
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableSet;
-import dev.architectury.event.events.client.ClientGuiEvent;
 import fuzs.forgeconfigapiport.fabric.api.v5.ConfigRegistry;
 import me.paulf.fairylights.FairyLights;
 import me.paulf.fairylights.client.color.*;
@@ -15,32 +12,20 @@ import me.paulf.fairylights.client.tutorial.ClippyController;
 import me.paulf.fairylights.server.ServerProxy;
 import me.paulf.fairylights.server.block.entity.FLBlockEntities;
 import me.paulf.fairylights.server.entity.FLEntities;
-import me.paulf.fairylights.server.feature.light.ColorChangingBehavior;
-import me.paulf.fairylights.server.item.DyeableItem;
-import me.paulf.fairylights.server.item.FLItems;
-import me.paulf.fairylights.server.item.components.FLComponents;
 import me.paulf.fairylights.server.net.clientbound.JingleMessage;
 import me.paulf.fairylights.server.net.clientbound.OpenEditLetteredConnectionScreenMessage;
 import me.paulf.fairylights.server.net.clientbound.UpdateEntityFastenerMessage;
-import me.paulf.fairylights.server.string.StringTypes;
 import net.fabricmc.fabric.api.client.model.loading.v1.ModelLoadingPlugin;
 import net.fabricmc.fabric.api.client.model.loading.v1.SimpleUnbakedExtraModel;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
-import net.fabricmc.fabric.api.client.rendering.v1.ColorResolverRegistry;
 import net.fabricmc.fabric.api.client.rendering.v1.ModelLayerRegistry;
+import net.fabricmc.fabric.api.client.rendering.v1.hud.HudElementRegistry;
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
-import net.minecraft.ChatFormatting;
 import net.minecraft.client.color.item.ItemTintSources;
-import net.minecraft.client.renderer.block.dispatch.BlockStateModel;
 import net.minecraft.client.renderer.entity.EntityRenderers;
-import net.minecraft.client.resources.model.sprite.Material;
-import net.minecraft.util.Util;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.blockentity.BlockEntityRenderers;
-import net.minecraft.client.renderer.texture.TextureAtlasSprite;
 import net.minecraft.resources.Identifier;
-import net.minecraft.util.RandomSource;
-import net.minecraft.world.item.ItemStack;
 import net.neoforged.fml.config.ModConfig;
 
 public final class ClientProxy extends ServerProxy {
@@ -57,7 +42,7 @@ public final class ClientProxy extends ServerProxy {
         new ClippyController().init();
         ConfigRegistry.INSTANCE.register(FairyLights.ID, ModConfig.Type.CLIENT, FLClientConfig.SPEC);
         ClientEventHandler clientEventHandler = new ClientEventHandler();
-        ClientGuiEvent.RENDER_HUD.register((guiGraphics, deltaTracker) -> {
+        HudElementRegistry.addLast(FairyLights.id("overlay"), (guiGraphics, deltaTracker) -> {
             var mc = Minecraft.getInstance();
             clientEventHandler.renderOverlay(mc.gui, guiGraphics, deltaTracker.getGameTimeDeltaPartialTick(true), mc.getWindow().getScreenWidth(), mc.getWindow().getScreenHeight());
         });
@@ -88,9 +73,9 @@ public final class ClientProxy extends ServerProxy {
     }*/
 
     private void setup() {
-        BlockEntityRenderers.register(FLBlockEntities.FASTENER.get(), context -> new FastenerBlockEntityRenderer(context, ServerProxy.buildBlockView()));
-        BlockEntityRenderers.register(FLBlockEntities.LIGHT.get(), LightBlockEntityRenderer::new);
-        EntityRenderers.register(FLEntities.FASTENER.get(), FenceFastenerRenderer::new);
+        BlockEntityRenderers.register(FLBlockEntities.FASTENER, context -> new FastenerBlockEntityRenderer(context, ServerProxy.buildBlockView()));
+        BlockEntityRenderers.register(FLBlockEntities.LIGHT, LightBlockEntityRenderer::new);
+        EntityRenderers.register(FLEntities.FASTENER, FenceFastenerRenderer::new);
         /*final LightRenderer r = new LightRenderer();
         final StringBuilder bob = new StringBuilder();
         FLItems.lights().forEach(l -> {

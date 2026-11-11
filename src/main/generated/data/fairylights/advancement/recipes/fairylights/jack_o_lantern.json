@@ -3,7 +3,7 @@
   "criteria": {
     "has_the_recipe": {
       "conditions": {
-        "recipe": "fairylights:jack_o_lantern"
+        "recipes": "fairylights:jack_o_lantern"
       },
       "trigger": "minecraft:recipe_unlocked"
     }

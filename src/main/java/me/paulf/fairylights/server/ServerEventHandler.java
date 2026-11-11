@@ -1,8 +1,5 @@
 package me.paulf.fairylights.server;
 
-import dev.architectury.event.EventResult;
-import dev.architectury.event.events.common.InteractionEvent;
-import dev.architectury.event.events.common.TickEvent;
 import me.paulf.fairylights.FairyLights;
 import me.paulf.fairylights.server.block.FLBlocks;
 import me.paulf.fairylights.server.block.FastenerBlock;
@@ -18,15 +15,19 @@ import me.paulf.fairylights.server.net.clientbound.JingleMessage;
 import me.paulf.fairylights.server.net.clientbound.UpdateEntityFastenerMessage;
 import me.paulf.fairylights.server.sound.FLSounds;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerEntityEvents;
+import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
+import net.fabricmc.fabric.api.event.player.UseBlockCallback;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.network.protocol.Packet;
 import net.minecraft.network.protocol.game.ClientboundBlockEventPacket;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.server.players.PlayerList;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.util.ProblemReporter;
 import net.minecraft.world.InteractionHand;
+import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.decoration.BlockAttachedEntity;
 import net.minecraft.world.entity.decoration.LeashFenceKnotEntity;
@@ -49,11 +50,14 @@ public final class ServerEventHandler {
             }
         });
 
-        TickEvent.PLAYER_POST.register(this::onTick);
-
-        InteractionEvent.RIGHT_CLICK_BLOCK.register((player, hand, pos, direction) -> {
-            return onRightClickBlock(player, hand, pos, direction);
+        ServerTickEvents.END_LEVEL_TICK.register(level -> {
+            for (ServerPlayer player : level.players()) {
+                this.onTick(player);
+            }
         });
+
+        UseBlockCallback.EVENT.register((player, level, hand, hitResult) ->
+            onRightClickBlock(player, level, hand, hitResult.getBlockPos()));
     }
 
     public void onTick(final Player player) {
@@ -69,9 +73,9 @@ public final class ServerEventHandler {
     public boolean onNoteBlockPlay(Level world, BlockPos pos, int note, NoteBlockInstrument instrument) {
         final Block noteBlock = world.getBlockState(pos).getBlock();
         final BlockState below = world.getBlockState(pos.below());
-        if (below.getBlock() == FLBlocks.FASTENER.get() && below.getValue(FastenerBlock.FACING) == Direction.DOWN) {
+        if (below.getBlock() == FLBlocks.FASTENER && below.getValue(FastenerBlock.FACING) == Direction.DOWN) {
             final float pitch = (float) Math.pow(2, (note - 12) / 12D);
-            world.playSound(null, pos, FLSounds.JINGLE_BELL.get(), SoundSource.RECORDS, 3, pitch);
+            world.playSound(null, pos, FLSounds.JINGLE_BELL, SoundSource.RECORDS, 3, pitch);
             world.addParticle(ParticleTypes.NOTE, pos.getX() + 0.5, pos.getY() + 1.2, pos.getZ() + 0.5, note / 24D, 0, 0);
             if (!world.isClientSide()) {
                 final Packet<?> pkt = new ClientboundBlockEventPacket(pos, noteBlock, instrument.ordinal(), note);
@@ -84,10 +88,9 @@ public final class ServerEventHandler {
         return false;
     }
 
-    public EventResult onRightClickBlock(Player player, InteractionHand hand, BlockPos pos, Direction direction) {
-        final Level world = player.level();
+    public InteractionResult onRightClickBlock(Player player, Level world, InteractionHand hand, BlockPos pos) {
         if (!(world.getBlockState(pos).getBlock() instanceof FenceBlock)) {
-            return EventResult.pass();
+            return InteractionResult.PASS;
         }
         final ItemStack stack = player.getItemInHand(hand);
         boolean checkHanging = stack.getItem() == Items.LEAD;
@@ -96,7 +99,7 @@ public final class ServerEventHandler {
             final ItemStack offhandStack = player.getOffhandItem();
             if (offhandStack.getItem() instanceof ConnectionItem) {
                 if (checkHanging) {
-                    return EventResult.interruptFalse();
+                    return InteractionResult.FAIL;
                 } else {
                     shouldCancelUse = true;
                 }
@@ -119,16 +122,16 @@ public final class ServerEventHandler {
             final BlockAttachedEntity entity = FenceFastenerEntity.findHanging(world, pos);
             if (entity != null && !(entity instanceof LeashFenceKnotEntity)) {
                 if (shouldCancelUse)
-                    return EventResult.interruptTrue();
+                    return InteractionResult.SUCCESS;
                 else
-                    return EventResult.interruptFalse();
+                    return InteractionResult.FAIL;
             }
         }
 
         if (shouldCancelUse)
-            return EventResult.interruptTrue();
+            return InteractionResult.SUCCESS;
 
-        return EventResult.pass();
+        return InteractionResult.PASS;
     }
 
     public static boolean tryJingle(final Level world, final HangingLightsConnection hangingLights) {

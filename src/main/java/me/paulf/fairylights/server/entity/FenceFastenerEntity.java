@@ -51,7 +51,7 @@ public final class FenceFastenerEntity extends HangingEntity {
     }
 
     public FenceFastenerEntity(final Level world) {
-        this(FLEntities.FASTENER.get(), world);
+        this(FLEntities.FASTENER, world);
     }
 
     public FenceFastenerEntity(final Level world, final BlockPos pos) {
@@ -112,13 +112,13 @@ public final class FenceFastenerEntity extends HangingEntity {
     public void dropItem(ServerLevel level, @Nullable final Entity breaker) {
         this.getFastener().ifPresent(fastener -> fastener.dropItems(this.level(), this.pos));
         if (breaker != null) {
-            this.level().levelEvent(2001, this.pos, Block.getId(FLBlocks.FASTENER.get().defaultBlockState()));
+            this.level().levelEvent(2001, this.pos, Block.getId(FLBlocks.FASTENER.defaultBlockState()));
         }
     }
 
     @Override
     public void playPlacementSound() {
-        final SoundType sound = FLBlocks.FASTENER.get().defaultBlockState().getSoundType();
+        final SoundType sound = FLBlocks.FASTENER.defaultBlockState().getSoundType();
         this.playSound(sound.getPlaceSound(), (sound.getVolume() + 1) / 2, sound.getPitch() * 0.8F);
     }
 

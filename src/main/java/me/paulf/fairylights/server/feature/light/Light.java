@@ -62,7 +62,7 @@ public final class Light<T extends LightBehavior> extends HangingFeature {
     }
 
     public void jingle(final Level world, final Vec3 origin, final int note, final ParticleOptions particle) {
-        this.jingle(world, origin, note, FLSounds.JINGLE_BELL.get(), particle);
+        this.jingle(world, origin, note, FLSounds.JINGLE_BELL, particle);
     }
 
     public void jingle(final Level world, final Vec3 origin, final int note, final SoundEvent sound, final ParticleOptions... particles) {

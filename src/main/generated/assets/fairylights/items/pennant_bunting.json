@@ -1,0 +1,24 @@
+{
+  "model": {
+    "type": "minecraft:model",
+    "model": "fairylights:item/pennant_bunting",
+    "tints": [
+      {
+        "type": "minecraft:dye",
+        "default": -1
+      },
+      {
+        "type": "fairylights:pattern",
+        "index": 1
+      },
+      {
+        "type": "fairylights:pattern",
+        "index": 2
+      },
+      {
+        "type": "fairylights:pattern",
+        "index": 3
+      }
+    ]
+  }
+}

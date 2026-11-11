@@ -3,7 +3,7 @@
   "criteria": {
     "has_the_recipe": {
       "conditions": {
-        "recipe": "fairylights:triangle_pennant"
+        "recipes": "fairylights:triangle_pennant"
       },
       "trigger": "minecraft:recipe_unlocked"
     }

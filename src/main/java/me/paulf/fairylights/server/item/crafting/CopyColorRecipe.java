@@ -84,6 +84,6 @@ public class CopyColorRecipe extends CustomRecipe {
 
     @Override
     public RecipeSerializer<? extends CustomRecipe> getSerializer() {
-        return FLCraftingRecipes.COPY_COLOR.get();
+        return FLCraftingRecipes.COPY_COLOR;
     }
 }

@@ -1,16 +1,9 @@
 {
   "type": "minecraft:crafting_shaped",
-  "category": "misc",
   "key": {
-    "G": {
-      "tag": "c:nuggets/gold"
-    },
-    "I": {
-      "tag": "c:ingots/iron"
-    },
-    "T": {
-      "item": "minecraft:torch"
-    }
+    "G": "#c:nuggets/gold",
+    "I": "#c:ingots/iron",
+    "T": "minecraft:torch"
   },
   "pattern": [
     " I ",

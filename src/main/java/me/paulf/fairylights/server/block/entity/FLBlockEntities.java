@@ -1,41 +1,46 @@
 package me.paulf.fairylights.server.block.entity;
 
-import dev.architectury.registry.registries.DeferredRegister;
-import dev.architectury.registry.registries.RegistrySupplier;
 import me.paulf.fairylights.FairyLights;
 import me.paulf.fairylights.server.block.FLBlocks;
-import net.fabricmc.fabric.api.object.builder.v1.block.entity.FabricBlockEntityType;
 import net.fabricmc.fabric.api.object.builder.v1.block.entity.FabricBlockEntityTypeBuilder;
-import net.minecraft.core.registries.Registries;
+import net.minecraft.core.Registry;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.entity.BlockEntityType;
+
+import java.util.function.Supplier;
 
 public final class FLBlockEntities {
     private FLBlockEntities() {}
 
-    public static final DeferredRegister<BlockEntityType<?>> REG = DeferredRegister.create(FairyLights.ID, Registries.BLOCK_ENTITY_TYPE);
+    public static final BlockEntityType<FastenerBlockEntity> FASTENER = register("fastener", () -> FabricBlockEntityTypeBuilder.create(FastenerBlockEntity::new, FLBlocks.FASTENER).build(null));
 
-    public static final RegistrySupplier<BlockEntityType<FastenerBlockEntity>> FASTENER = REG.register("fastener", () -> FabricBlockEntityTypeBuilder.create(FastenerBlockEntity::new, FLBlocks.FASTENER.get()).build(null));
-
-    public static final RegistrySupplier<BlockEntityType<LightBlockEntity>> LIGHT = REG.register("light", () -> FabricBlockEntityTypeBuilder.create(LightBlockEntity::new,
-        FLBlocks.FAIRY_LIGHT.get(),
-        FLBlocks.PAPER_LANTERN.get(),
-        FLBlocks.ORB_LANTERN.get(),
-        FLBlocks.FLOWER_LIGHT.get(),
-        FLBlocks.CANDLE_LANTERN_LIGHT.get(),
-        FLBlocks.OIL_LANTERN_LIGHT.get(),
-        FLBlocks.JACK_O_LANTERN.get(),
-        FLBlocks.SKULL_LIGHT.get(),
-        FLBlocks.GHOST_LIGHT.get(),
-        FLBlocks.SPIDER_LIGHT.get(),
-        FLBlocks.WITCH_LIGHT.get(),
-        FLBlocks.SNOWFLAKE_LIGHT.get(),
-        FLBlocks.HEART_LIGHT.get(),
-        FLBlocks.MOON_LIGHT.get(),
-        FLBlocks.STAR_LIGHT.get(),
-        FLBlocks.ICICLE_LIGHTS.get(),
-        FLBlocks.METEOR_LIGHT.get(),
-        FLBlocks.OIL_LANTERN.get(),
-        FLBlocks.CANDLE_LANTERN.get(),
-        FLBlocks.INCANDESCENT_LIGHT.get()
+    public static final BlockEntityType<LightBlockEntity> LIGHT = register("light", () -> FabricBlockEntityTypeBuilder.create(LightBlockEntity::new,
+        FLBlocks.FAIRY_LIGHT,
+        FLBlocks.PAPER_LANTERN,
+        FLBlocks.ORB_LANTERN,
+        FLBlocks.FLOWER_LIGHT,
+        FLBlocks.CANDLE_LANTERN_LIGHT,
+        FLBlocks.OIL_LANTERN_LIGHT,
+        FLBlocks.JACK_O_LANTERN,
+        FLBlocks.SKULL_LIGHT,
+        FLBlocks.GHOST_LIGHT,
+        FLBlocks.SPIDER_LIGHT,
+        FLBlocks.WITCH_LIGHT,
+        FLBlocks.SNOWFLAKE_LIGHT,
+        FLBlocks.HEART_LIGHT,
+        FLBlocks.MOON_LIGHT,
+        FLBlocks.STAR_LIGHT,
+        FLBlocks.ICICLE_LIGHTS,
+        FLBlocks.METEOR_LIGHT,
+        FLBlocks.OIL_LANTERN,
+        FLBlocks.CANDLE_LANTERN,
+        FLBlocks.INCANDESCENT_LIGHT
     ).build(null));
+
+    private static <T extends BlockEntity> BlockEntityType<T> register(String name, Supplier<BlockEntityType<T>> register) {
+        return Registry.register(BuiltInRegistries.BLOCK_ENTITY_TYPE, FairyLights.id(name), register.get());
+    }
+
+    public static void register() {}
 }

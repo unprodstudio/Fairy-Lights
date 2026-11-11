@@ -3,7 +3,7 @@
   "criteria": {
     "has_the_recipe": {
       "conditions": {
-        "recipe": "fairylights:candle_lantern_light"
+        "recipes": "fairylights:candle_lantern_light"
       },
       "trigger": "minecraft:recipe_unlocked"
     }

@@ -18,7 +18,7 @@ public record StringTypeBasedItemTintSource() implements ItemTintSource {
             return 0xFF000000 | stack.get(FLComponents.STRING_TYPE).getColor();
         }
 
-        return 0xFF000000 | StringTypes.BLACK_STRING.get().getColor();
+        return 0xFF000000 | StringTypes.BLACK_STRING.getColor();
     }
 
     @Override

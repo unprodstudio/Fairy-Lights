@@ -3,7 +3,7 @@
   "criteria": {
     "has_the_recipe": {
       "conditions": {
-        "recipe": "fairylights:tinsel_garland"
+        "recipes": "fairylights:tinsel_garland"
       },
       "trigger": "minecraft:recipe_unlocked"
     }

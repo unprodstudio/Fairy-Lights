@@ -1,19 +1,10 @@
 {
   "type": "minecraft:crafting_shaped",
-  "category": "misc",
   "key": {
-    "G": {
-      "tag": "c:glass_panes/colorless"
-    },
-    "I": {
-      "tag": "c:ingots/iron"
-    },
-    "S": {
-      "item": "minecraft:stick"
-    },
-    "T": {
-      "item": "minecraft:torch"
-    }
+    "G": "#c:glass_panes/colorless",
+    "I": "#c:ingots/iron",
+    "S": "minecraft:stick",
+    "T": "minecraft:torch"
   },
   "pattern": [
     " I ",

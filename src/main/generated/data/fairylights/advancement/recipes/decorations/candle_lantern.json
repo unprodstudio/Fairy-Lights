@@ -13,7 +13,7 @@
     },
     "has_the_recipe": {
       "conditions": {
-        "recipe": "fairylights:candle_lantern"
+        "recipes": "fairylights:candle_lantern"
       },
       "trigger": "minecraft:recipe_unlocked"
     },

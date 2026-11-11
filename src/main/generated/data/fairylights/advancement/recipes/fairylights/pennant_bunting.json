@@ -3,7 +3,7 @@
   "criteria": {
     "has_the_recipe": {
       "conditions": {
-        "recipe": "fairylights:pennant_bunting"
+        "recipes": "fairylights:pennant_bunting"
       },
       "trigger": "minecraft:recipe_unlocked"
     }

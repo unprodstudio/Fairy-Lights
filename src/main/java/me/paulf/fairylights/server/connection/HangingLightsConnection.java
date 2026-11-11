@@ -67,7 +67,7 @@ public final class HangingLightsConnection extends HangingFeatureConnection<Ligh
 
     public HangingLightsConnection(final ConnectionType<? extends HangingLightsConnection> type, final Level world, final Fastener<?> fastenerOrigin, final UUID uuid) {
         super(type, world, fastenerOrigin, uuid);
-        this.string = StringTypes.BLACK_STRING.get();
+        this.string = StringTypes.BLACK_STRING;
         this.pattern = new ArrayList<>();
     }
 
@@ -94,7 +94,7 @@ public final class HangingLightsConnection extends HangingFeatureConnection<Ligh
                 this.pattern.set(index, placed);
                 ItemHandlerHelper.giveItemToPlayer(player, light);
                 this.computeCatenary();
-                this.world.playSound(null, hit.x, hit.y, hit.z, FLSounds.FEATURE_COLOR_CHANGE.get(), SoundSource.BLOCKS, 1, 1);
+                this.world.playSound(null, hit.x, hit.y, hit.z, FLSounds.FEATURE_COLOR_CHANGE, SoundSource.BLOCKS, 1, 1);
                 return true;
             }
         }
@@ -105,10 +105,10 @@ public final class HangingLightsConnection extends HangingFeatureConnection<Ligh
         final SoundEvent lightSnd;
         final float pitch;
         if (this.isOn) {
-            lightSnd = FLSounds.FEATURE_LIGHT_TURNON.get();
+            lightSnd = FLSounds.FEATURE_LIGHT_TURNON;
             pitch = 0.6F;
         } else {
-            lightSnd = FLSounds.FEATURE_LIGHT_TURNOFF.get();
+            lightSnd = FLSounds.FEATURE_LIGHT_TURNOFF;
             pitch = 0.5F;
         }
         this.world.playSound(null, hit.x, hit.y, hit.z, lightSnd, SoundSource.BLOCKS, 1, pitch);
@@ -143,7 +143,7 @@ public final class HangingLightsConnection extends HangingFeatureConnection<Ligh
     }
 
     private void updateNeighbors(final Fastener<?> fastener) {
-        this.world.updateNeighbourForOutputSignal(fastener.getPos(), FLBlocks.FASTENER.get());
+        this.world.updateNeighbourForOutputSignal(fastener.getPos(), FLBlocks.FASTENER);
     }
 
     @Override

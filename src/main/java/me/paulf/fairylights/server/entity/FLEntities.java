@@ -1,19 +1,20 @@
 package me.paulf.fairylights.server.entity;
 
-import dev.architectury.registry.registries.DeferredRegister;
-import dev.architectury.registry.registries.RegistrySupplier;
 import me.paulf.fairylights.FairyLights;
+import net.minecraft.core.Registry;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceKey;
+import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.MobCategory;
+
+import java.util.function.Function;
 
 public final class FLEntities {
     private FLEntities() {}
 
-    public static final DeferredRegister<EntityType<?>> REG = DeferredRegister.create(FairyLights.ID, Registries.ENTITY_TYPE);
-
-    public static final RegistrySupplier<EntityType<FenceFastenerEntity>> FASTENER = REG.register("fastener", () ->
+    public static final EntityType<FenceFastenerEntity> FASTENER = register("fastener", key ->
         EntityType.Builder.<FenceFastenerEntity>of(FenceFastenerEntity::new, MobCategory.MISC)
             .sized(1.15F, 2.8F)
             .clientTrackingRange(10)
@@ -35,6 +36,13 @@ public final class FLEntities {
              * connection. I hope you enjoy my line lengths.
              */
             .eyeHeight(1)
-            .build(ResourceKey.create(Registries.ENTITY_TYPE, FairyLights.id("fastener")))
+            .build(key)
     );
+
+    public static <T extends Entity> EntityType<T> register(String name, Function<ResourceKey<EntityType<?>>, EntityType<T>> register) {
+        var key = ResourceKey.create(Registries.ENTITY_TYPE, FairyLights.id(name));
+        return Registry.register(BuiltInRegistries.ENTITY_TYPE, key, register.apply(key));
+    }
+
+    public static void register() {}
 }

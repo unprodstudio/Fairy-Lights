@@ -102,9 +102,9 @@ public final class FastenerBlock extends DirectionalBlock implements EntityBlock
     @Override
     public <T extends BlockEntity> BlockEntityTicker<T> getTicker(final Level level, final BlockState state, final BlockEntityType<T> type) {
         if (level.isClientSide()) {
-            return createTickerHelper(type, FLBlockEntities.FASTENER.get(), FastenerBlockEntity::tickClient);
+            return createTickerHelper(type, FLBlockEntities.FASTENER, FastenerBlockEntity::tickClient);
         }
-        return createTickerHelper(type, FLBlockEntities.FASTENER.get(), FastenerBlockEntity::tick);
+        return createTickerHelper(type, FLBlockEntities.FASTENER, FastenerBlockEntity::tick);
     }
 
     @SuppressWarnings("unchecked")

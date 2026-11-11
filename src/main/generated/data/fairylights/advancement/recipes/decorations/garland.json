@@ -13,7 +13,7 @@
     },
     "has_the_recipe": {
       "conditions": {
-        "recipe": "fairylights:garland"
+        "recipes": "fairylights:garland"
       },
       "trigger": "minecraft:recipe_unlocked"
     },

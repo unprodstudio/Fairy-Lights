@@ -1,5 +1,6 @@
 package me.paulf.fairylights.data;
 
+import com.mojang.serialization.JsonOps;
 import io.netty.buffer.Unpooled;
 import me.paulf.fairylights.FairyLights;
 import me.paulf.fairylights.mixin.fabric.AdvancementBuilderAccessor;
@@ -7,11 +8,15 @@ import net.minecraft.advancements.*;
 import net.minecraft.advancements.triggers.CriteriaTriggers;
 import net.minecraft.advancements.triggers.Criterion;
 import net.minecraft.advancements.triggers.RecipeUnlockedTrigger;
+import net.minecraft.core.HolderLookup;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.data.recipes.RecipeOutput;
 import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.resources.Identifier;
+import net.minecraft.resources.RegistryOps;
 import net.minecraft.resources.ResourceKey;
+import net.minecraft.util.NullOps;
+import net.minecraft.util.Unit;
 import net.minecraft.world.item.crafting.CraftingBookCategory;
 import net.minecraft.world.item.crafting.RecipeSerializer;
 
@@ -32,7 +37,7 @@ public class GenericRecipeBuilder {
         return this;
     }
 
-    public void build(final RecipeOutput consumer, final Identifier id) {
+    public void build(final RecipeOutput consumer, final HolderLookup.Provider registries, final Identifier id) {
         var recipeKey = ResourceKey.create(Registries.RECIPE, id);
         final AdvancementHolder advancementHolder;
         final Identifier advancementId;
@@ -48,12 +53,7 @@ public class GenericRecipeBuilder {
                 .build(advancementId);
         }
 
-        // this is a dumb workaround but it works idc
-        var buf = new RegistryFriendlyByteBuf(Unpooled.buffer(), null);
-        buf.writeEnum(CraftingBookCategory.MISC);
-        buf.resetReaderIndex();
-
-        consumer.accept(recipeKey, this.serializer.streamCodec().decode(buf), advancementHolder);
+        consumer.accept(recipeKey, this.serializer.codec().codec().decode(RegistryOps.create(NullOps.INSTANCE, registries), Unit.INSTANCE).getOrThrow().getFirst(), advancementHolder);
     }
 
     public static GenericRecipeBuilder customRecipe(final RecipeSerializer<?> serializer) {

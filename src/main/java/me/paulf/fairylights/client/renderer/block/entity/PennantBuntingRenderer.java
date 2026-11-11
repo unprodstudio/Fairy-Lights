@@ -49,10 +49,10 @@ public class PennantBuntingRenderer extends ConnectionRenderer<PennantBuntingCon
     public static final ImmutableSet<Identifier> MODELS = ImmutableSet.of(TRIANGLE_MODEL, SPEARHEAD_MODEL, SWALLOWTAIL_MODEL, SQUARE_MODEL);
 
     private final ImmutableMap<Item, ExtraModelKey<BlockStateModel>> models = ImmutableMap.of(
-        FLItems.TRIANGLE_PENNANT.get(), TRIANGLE_MODEL_KEY,
-        FLItems.SPEARHEAD_PENNANT.get(), SPEARHEAD_MODEL_KEY,
-        FLItems.SWALLOWTAIL_PENNANT.get(), SWALLOWTAIL_MODEL_KEY,
-        FLItems.SQUARE_PENNANT.get(), SQUARE_MODEL_KEY
+        FLItems.TRIANGLE_PENNANT, TRIANGLE_MODEL_KEY,
+        FLItems.SPEARHEAD_PENNANT, SPEARHEAD_MODEL_KEY,
+        FLItems.SWALLOWTAIL_PENNANT, SWALLOWTAIL_MODEL_KEY,
+        FLItems.SQUARE_PENNANT, SQUARE_MODEL_KEY
     );
 
     public PennantBuntingRenderer(final Function<ModelLayerLocation, ModelPart> baker) {

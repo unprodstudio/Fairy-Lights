@@ -1,14 +1,18 @@
 package me.paulf.fairylights.server.item;
 
-import dev.architectury.registry.registries.DeferredRegister;
-import dev.architectury.registry.registries.RegistrySupplier;
 import me.paulf.fairylights.FairyLights;
 import me.paulf.fairylights.server.block.FLBlocks;
 import me.paulf.fairylights.server.block.LightBlock;
+import net.minecraft.core.Registry;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.core.registries.Registries;
+import net.minecraft.resources.ResourceKey;
 import net.minecraft.world.item.Item;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.function.BiFunction;
+import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
@@ -16,82 +20,91 @@ import java.util.stream.StreamSupport;
 public final class FLItems {
     private FLItems() {}
 
-    public static final DeferredRegister<Item> REG = DeferredRegister.create(FairyLights.ID, Registries.ITEM);
+    private static final List<LightItem> LIGHTS = new ArrayList<>();
 
-    public static final RegistrySupplier<ConnectionItem> HANGING_LIGHTS = REG.register("hanging_lights", () -> new HangingLightsConnectionItem(defaultProperties()));
+    public static final ConnectionItem HANGING_LIGHTS = register("hanging_lights", key -> new HangingLightsConnectionItem(defaultProperties(key)));
 
-    public static final RegistrySupplier<ConnectionItem> PENNANT_BUNTING = REG.register("pennant_bunting", () -> new PennantBuntingConnectionItem(defaultProperties()));
+    public static final ConnectionItem PENNANT_BUNTING = register("pennant_bunting", key -> new PennantBuntingConnectionItem(defaultProperties(key)));
 
-    public static final RegistrySupplier<ConnectionItem> TINSEL = REG.register("tinsel", () -> new TinselConnectionItem(defaultProperties()));
+    public static final ConnectionItem TINSEL = register("tinsel", key -> new TinselConnectionItem(defaultProperties(key)));
 
-    public static final RegistrySupplier<ConnectionItem> LETTER_BUNTING = REG.register("letter_bunting", () -> new LetterBuntingConnectionItem(defaultProperties()));
+    public static final ConnectionItem LETTER_BUNTING = register("letter_bunting", key -> new LetterBuntingConnectionItem(defaultProperties(key)));
 
-    public static final RegistrySupplier<ConnectionItem> GARLAND = REG.register("garland", () -> new GarlandConnectionItem(defaultProperties()));
+    public static final ConnectionItem GARLAND = register("garland", key -> new GarlandConnectionItem(defaultProperties(key)));
 
-    public static final RegistrySupplier<LightItem> FAIRY_LIGHT = REG.register("fairy_light", FLItems.createColorLight(FLBlocks.FAIRY_LIGHT));
+    public static final LightItem FAIRY_LIGHT = register("fairy_light", FLItems.createColorLight(FLBlocks.FAIRY_LIGHT));
 
-    public static final RegistrySupplier<LightItem> PAPER_LANTERN = REG.register("paper_lantern", FLItems.createColorLight(FLBlocks.PAPER_LANTERN));
+    public static final LightItem PAPER_LANTERN = register("paper_lantern", FLItems.createColorLight(FLBlocks.PAPER_LANTERN));
 
-    public static final RegistrySupplier<LightItem> ORB_LANTERN = REG.register("orb_lantern", FLItems.createColorLight(FLBlocks.ORB_LANTERN));
+    public static final LightItem ORB_LANTERN = register("orb_lantern", FLItems.createColorLight(FLBlocks.ORB_LANTERN));
 
-    public static final RegistrySupplier<LightItem> FLOWER_LIGHT = REG.register("flower_light", FLItems.createColorLight(FLBlocks.FLOWER_LIGHT));
+    public static final LightItem FLOWER_LIGHT = register("flower_light", FLItems.createColorLight(FLBlocks.FLOWER_LIGHT));
 
-    public static final RegistrySupplier<LightItem> CANDLE_LANTERN_LIGHT = REG.register("candle_lantern_light", FLItems.createColorLight(FLBlocks.CANDLE_LANTERN_LIGHT));
+    public static final LightItem CANDLE_LANTERN_LIGHT = register("candle_lantern_light", FLItems.createColorLight(FLBlocks.CANDLE_LANTERN_LIGHT));
 
-    public static final RegistrySupplier<LightItem> OIL_LANTERN_LIGHT = REG.register("oil_lantern_light", FLItems.createColorLight(FLBlocks.OIL_LANTERN_LIGHT));
+    public static final LightItem OIL_LANTERN_LIGHT = register("oil_lantern_light", FLItems.createColorLight(FLBlocks.OIL_LANTERN_LIGHT));
 
-    public static final RegistrySupplier<LightItem> JACK_O_LANTERN = REG.register("jack_o_lantern", FLItems.createColorLight(FLBlocks.JACK_O_LANTERN));
+    public static final LightItem JACK_O_LANTERN = register("jack_o_lantern", FLItems.createColorLight(FLBlocks.JACK_O_LANTERN));
 
-    public static final RegistrySupplier<LightItem> SKULL_LIGHT = REG.register("skull_light", FLItems.createColorLight(FLBlocks.SKULL_LIGHT));
+    public static final LightItem SKULL_LIGHT = register("skull_light", FLItems.createColorLight(FLBlocks.SKULL_LIGHT));
 
-    public static final RegistrySupplier<LightItem> GHOST_LIGHT = REG.register("ghost_light", FLItems.createColorLight(FLBlocks.GHOST_LIGHT));
+    public static final LightItem GHOST_LIGHT = register("ghost_light", FLItems.createColorLight(FLBlocks.GHOST_LIGHT));
 
-    public static final RegistrySupplier<LightItem> SPIDER_LIGHT = REG.register("spider_light", FLItems.createColorLight(FLBlocks.SPIDER_LIGHT));
+    public static final LightItem SPIDER_LIGHT = register("spider_light", FLItems.createColorLight(FLBlocks.SPIDER_LIGHT));
 
-    public static final RegistrySupplier<LightItem> WITCH_LIGHT = REG.register("witch_light", FLItems.createColorLight(FLBlocks.WITCH_LIGHT));
+    public static final LightItem WITCH_LIGHT = register("witch_light", FLItems.createColorLight(FLBlocks.WITCH_LIGHT));
 
-    public static final RegistrySupplier<LightItem> SNOWFLAKE_LIGHT = REG.register("snowflake_light", FLItems.createColorLight(FLBlocks.SNOWFLAKE_LIGHT));
+    public static final LightItem SNOWFLAKE_LIGHT = register("snowflake_light", FLItems.createColorLight(FLBlocks.SNOWFLAKE_LIGHT));
 
-    public static final RegistrySupplier<LightItem> HEART_LIGHT = REG.register("heart_light", FLItems.createColorLight(FLBlocks.HEART_LIGHT));
+    public static final LightItem HEART_LIGHT = register("heart_light", FLItems.createColorLight(FLBlocks.HEART_LIGHT));
 
-    public static final RegistrySupplier<LightItem> MOON_LIGHT = REG.register("moon_light", FLItems.createColorLight(FLBlocks.MOON_LIGHT));
+    public static final LightItem MOON_LIGHT = register("moon_light", FLItems.createColorLight(FLBlocks.MOON_LIGHT));
 
-    public static final RegistrySupplier<LightItem> STAR_LIGHT = REG.register("star_light", FLItems.createColorLight(FLBlocks.STAR_LIGHT));
+    public static final LightItem STAR_LIGHT = register("star_light", FLItems.createColorLight(FLBlocks.STAR_LIGHT));
 
-    public static final RegistrySupplier<LightItem> ICICLE_LIGHTS = REG.register("icicle_lights", FLItems.createColorLight(FLBlocks.ICICLE_LIGHTS));
+    public static final LightItem ICICLE_LIGHTS = register("icicle_lights", FLItems.createColorLight(FLBlocks.ICICLE_LIGHTS));
 
-    public static final RegistrySupplier<LightItem> METEOR_LIGHT = REG.register("meteor_light", FLItems.createColorLight(FLBlocks.METEOR_LIGHT));
+    public static final LightItem METEOR_LIGHT = register("meteor_light", FLItems.createColorLight(FLBlocks.METEOR_LIGHT));
 
-    public static final RegistrySupplier<LightItem> OIL_LANTERN = REG.register("oil_lantern", FLItems.createLight(FLBlocks.OIL_LANTERN, LightItem::new));
+    public static final LightItem OIL_LANTERN = register("oil_lantern", FLItems.createLight(FLBlocks.OIL_LANTERN, LightItem::new));
 
-    public static final RegistrySupplier<LightItem> CANDLE_LANTERN = REG.register("candle_lantern", FLItems.createLight(FLBlocks.CANDLE_LANTERN, LightItem::new));
+    public static final LightItem CANDLE_LANTERN = register("candle_lantern", FLItems.createLight(FLBlocks.CANDLE_LANTERN, LightItem::new));
 
-    public static final RegistrySupplier<LightItem> INCANDESCENT_LIGHT = REG.register("incandescent_light", FLItems.createLight(FLBlocks.INCANDESCENT_LIGHT, LightItem::new));
+    public static final LightItem INCANDESCENT_LIGHT = register("incandescent_light", FLItems.createLight(FLBlocks.INCANDESCENT_LIGHT, LightItem::new));
 
-    public static final RegistrySupplier<Item> TRIANGLE_PENNANT = REG.register("triangle_pennant", () -> new PennantItem(defaultProperties()));
+    public static final Item TRIANGLE_PENNANT = register("triangle_pennant", key -> new PennantItem(defaultProperties(key)));
 
-    public static final RegistrySupplier<Item> SPEARHEAD_PENNANT = REG.register("spearhead_pennant", () -> new PennantItem(defaultProperties()));
+    public static final Item SPEARHEAD_PENNANT = register("spearhead_pennant", key -> new PennantItem(defaultProperties(key)));
 
-    public static final RegistrySupplier<Item> SWALLOWTAIL_PENNANT = REG.register("swallowtail_pennant", () -> new PennantItem(defaultProperties()));
+    public static final Item SWALLOWTAIL_PENNANT = register("swallowtail_pennant", key -> new PennantItem(defaultProperties(key)));
 
-    public static final RegistrySupplier<Item> SQUARE_PENNANT = REG.register("square_pennant", () -> new PennantItem(defaultProperties()));
+    public static final Item SQUARE_PENNANT = register("square_pennant", key -> new PennantItem(defaultProperties(key)));
 
-    private static Item.Properties defaultProperties() {
-        return new Item.Properties();
+    private static Item.Properties defaultProperties(ResourceKey<Item> key) {
+        return new Item.Properties().setId(key);
     }
 
-    private static Supplier<LightItem> createLight(final RegistrySupplier<LightBlock> block, final BiFunction<LightBlock, Item.Properties, LightItem> factory) {
-        return () -> factory.apply(block.get(), defaultProperties().stacksTo(16));
+    private static <T extends Item> T register(String name, Function<ResourceKey<Item>, T> register) {
+        var key = ResourceKey.create(Registries.ITEM, FairyLights.id(name));
+        var item = Registry.register(BuiltInRegistries.ITEM, key, register.apply(key));
+
+        if (item instanceof LightItem lightItem)
+            LIGHTS.add(lightItem);
+
+        return item;
     }
 
-    private static Supplier<LightItem> createColorLight(final RegistrySupplier<LightBlock> block) {
+    public static void register() {}
+
+    private static Function<ResourceKey<Item>, LightItem> createLight(final LightBlock block, final BiFunction<LightBlock, Item.Properties, LightItem> factory) {
+        return key -> factory.apply(block, defaultProperties(key).stacksTo(16));
+    }
+
+    private static Function<ResourceKey<Item>, LightItem> createColorLight(final LightBlock block) {
         return createLight(block, ColorLightItem::new);
     }
 
     public static Stream<LightItem> lights() {
-        return StreamSupport.stream(REG.spliterator(), false)
-            .flatMap(RegistrySupplier::stream)
-            .filter(LightItem.class::isInstance)
-            .map(LightItem.class::cast);
+        return LIGHTS.stream();
     }
 }
