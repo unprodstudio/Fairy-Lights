@@ -8,6 +8,8 @@ import net.minecraft.core.component.DataComponentMap;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.world.item.DyeColor;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.storage.ValueInput;
+import net.minecraft.world.level.storage.ValueOutput;
 
 import java.util.UUID;
 
@@ -29,8 +31,9 @@ public final class GarlandTinselConnection extends Connection {
     }
 
     @Override
-    public CompoundTag serializeLogic(HolderLookup.Provider registries) {
-        return DyeableItem.setColor(super.serializeLogic(registries), this.color);
+    public void serializeLogic(ValueOutput output) {
+        super.serializeLogic(output);
+        DyeableItem.setColor(output, this.color);
     }
 
     @Override
@@ -43,9 +46,9 @@ public final class GarlandTinselConnection extends Connection {
     }
 
     @Override
-    public void deserializeLogic(final CompoundTag compound, HolderLookup.Provider registries) {
-        super.deserializeLogic(compound, registries);
-        this.color = DyeableItem.getColor(compound);
+    public void deserializeLogic(final ValueInput input) {
+        super.deserializeLogic(input);
+        this.color = DyeableItem.getColor(input);
     }
 
     @Override

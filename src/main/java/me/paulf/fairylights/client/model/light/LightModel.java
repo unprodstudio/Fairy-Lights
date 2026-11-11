@@ -2,6 +2,7 @@ package me.paulf.fairylights.client.model.light;
 
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
+import me.paulf.fairylights.client.renderer.block.entity.state.LightRenderState;
 import me.paulf.fairylights.server.feature.light.Light;
 import me.paulf.fairylights.server.feature.light.LightBehavior;
 import me.paulf.fairylights.util.AABBBuilder;
@@ -9,17 +10,17 @@ import net.minecraft.client.model.Model;
 import net.minecraft.client.model.geom.ModelPart;
 import net.minecraft.client.model.geom.builders.LayerDefinition;
 import net.minecraft.client.model.geom.builders.MeshDefinition;
-import net.minecraft.client.renderer.RenderType;
-import net.minecraft.util.FastColor;
+import net.minecraft.client.renderer.rendertype.RenderTypes;
+import net.minecraft.util.ARGB;
 import net.minecraft.util.Mth;
 import net.minecraft.world.phys.AABB;
-import org.jetbrains.annotations.Nullable;
+import org.jspecify.annotations.Nullable;
 import org.joml.Quaternionf;
 
 import java.util.ArrayList;
 import java.util.List;
 
-public abstract class LightModel<T extends LightBehavior> extends Model {
+public abstract class LightModel<T extends LightBehavior> extends Model<LightRenderState> {
     protected final ModelPart lit;
 
     protected final ModelPart litTint;
@@ -44,7 +45,7 @@ public abstract class LightModel<T extends LightBehavior> extends Model {
     private boolean powered;
 
     public LightModel(ModelPart root) {
-        super(RenderType::entityTranslucent);
+        super(root, RenderTypes::entityTranslucent);
         this.lit = root.getChild("lit");
         this.litTint = root.getChild("lit_tint");
         this.litTintGlow = root.getChild("lit_tint_glow");
@@ -93,8 +94,8 @@ public abstract class LightModel<T extends LightBehavior> extends Model {
         if (this.bounds == null) {
             final PoseStack matrix = new PoseStack();
             final AABBVertexBuilder builder = new AABBVertexBuilder();
-            this.renderToBuffer(matrix, builder, 0, 0, FastColor.ARGB32.color(255, 255, 255, 255));
-            this.renderTranslucent(matrix, builder, 0, 0, FastColor.ARGB32.color(255, 255, 255, 255));
+            this.renderToBuffer(matrix, builder, 0, 0, ARGB.color(255, 255, 255, 255));
+            this.renderTranslucent(matrix, builder, 0, 0, ARGB.color(255, 255, 255, 255));
             this.bounds = builder.build();
         }
         return this.bounds;
@@ -103,7 +104,7 @@ public abstract class LightModel<T extends LightBehavior> extends Model {
     public double getFloorOffset() {
         if (Double.isNaN(this.floorOffset)) {
             final AABBVertexBuilder builder = new AABBVertexBuilder();
-            this.renderToBuffer(new PoseStack(), builder, 0, 0, FastColor.ARGB32.color(255, 255, 255, 255));
+            this.renderToBuffer(new PoseStack(), builder, 0, 0, ARGB.color(255, 255, 255, 255));
             this.floorOffset = builder.build().minY-this.getBounds().minY;
         }
         return this.floorOffset;
@@ -119,17 +120,17 @@ public abstract class LightModel<T extends LightBehavior> extends Model {
         final int emissiveLight = this.getLight(light);
         this.lit.render(matrix, builder, emissiveLight, overlay, color);
 
-        this.litTint.render(matrix, builder, emissiveLight, overlay, FastColor.ARGB32.multiply(color, FastColor.ARGB32.colorFromFloat(1f, this.red, this.green, this.blue)));
+        this.litTint.render(matrix, builder, emissiveLight, overlay, ARGB.multiply(color, ARGB.colorFromFloat(1f, this.red, this.green, this.blue)));
     }
 
     public void renderTranslucent(final PoseStack matrix, final VertexConsumer builder, final int light, final int overlay, final int color) {
         final float v = this.brightness;
 
-        float r = FastColor.ARGB32.red(color) / 255f;
-        float g = FastColor.ARGB32.green(color) / 255f;
-        float b = FastColor.ARGB32.blue(color) / 255f;
+        float r = ARGB.red(color) / 255f;
+        float g = ARGB.green(color) / 255f;
+        float b = ARGB.blue(color) / 255f;
 
-        this.litTintGlow.render(matrix, builder, this.getLight(light), overlay, FastColor.ARGB32.colorFromFloat(v * 0.15F + 0.2F, r * this.red * v + (1.0F - v), g * this.green * v + (1.0F - v), b * this.blue * v + (1.0F - v)));
+        this.litTintGlow.render(matrix, builder, this.getLight(light), overlay, ARGB.colorFromFloat(v * 0.15F + 0.2F, r * this.red * v + (1.0F - v), g * this.green * v + (1.0F - v), b * this.blue * v + (1.0F - v)));
     }
 
     protected int getLight(final int packedLight) {
@@ -169,6 +170,11 @@ public abstract class LightModel<T extends LightBehavior> extends Model {
         }
 
         @Override
+        public VertexConsumer setColor(int color) {
+            return this;
+        }
+
+        @Override
         public VertexConsumer setUv(float u, float v) {
             return this;
         }
@@ -184,7 +190,17 @@ public abstract class LightModel<T extends LightBehavior> extends Model {
         }
 
         @Override
+        public VertexConsumer setUv3(float u, float v) {
+            return this;
+        }
+
+        @Override
         public VertexConsumer setNormal(float normalX, float normalY, float normalZ) {
+            return this;
+        }
+
+        @Override
+        public VertexConsumer setLineWidth(float width) {
             return this;
         }
     }

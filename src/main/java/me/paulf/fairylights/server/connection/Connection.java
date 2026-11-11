@@ -1,6 +1,5 @@
 package me.paulf.fairylights.server.connection;
 
-import io.github.fabricators_of_create.porting_lib.transfer.item.ItemHandlerHelper;
 import me.paulf.fairylights.server.collision.Collidable;
 import me.paulf.fairylights.server.collision.CollidableList;
 import me.paulf.fairylights.server.collision.FeatureCollisionTree;
@@ -16,6 +15,7 @@ import me.paulf.fairylights.server.item.components.FLComponents;
 import me.paulf.fairylights.server.net.serverbound.InteractionConnectionMessage;
 import me.paulf.fairylights.server.sound.FLSounds;
 import me.paulf.fairylights.util.*;
+import me.paulf.fairylights.util.fabric.ItemHandlerHelper;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.fabricmc.fabric.api.tag.convention.v2.ConventionalItemTags;
 import net.minecraft.core.Direction;
@@ -25,6 +25,7 @@ import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.Tag;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.util.Mth;
+import net.minecraft.util.ProblemReporter;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.entity.player.Player;
@@ -32,9 +33,12 @@ import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.storage.TagValueOutput;
+import net.minecraft.world.level.storage.ValueInput;
+import net.minecraft.world.level.storage.ValueOutput;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
-import org.jetbrains.annotations.Nullable;
+import org.jspecify.annotations.Nullable;
 
 import java.util.UUID;
 
@@ -200,9 +204,9 @@ public abstract class Connection implements NBTSerializable {
             final ItemEntity item = new ItemEntity(this.world, hit.x, hit.y, hit.z, stack);
             final float scale = 0.05F;
             item.setDeltaMovement(
-                this.world.random.nextGaussian() * scale,
-                this.world.random.nextGaussian() * scale + 0.2F,
-                this.world.random.nextGaussian() * scale
+                this.world.getRandom().nextGaussian() * scale,
+                this.world.getRandom().nextGaussian() * scale + 0.2F,
+                this.world.getRandom().nextGaussian() * scale
             );
             this.world.addFreshEntity(item);
         }
@@ -228,7 +232,12 @@ public abstract class Connection implements NBTSerializable {
     public boolean matches(final ItemStack stack, HolderLookup.Provider registries) {
         if (this.getType().getItem().equals(stack.getItem())) {
             final CompoundTag tag = stack.get(FLComponents.CONNECTION_DATA);
-            return tag == null || Utils.impliesNbt(this.serializeLogic(registries), tag);
+            if (tag == null)
+                return true;
+
+            TagValueOutput output = TagValueOutput.createWithContext(ProblemReporter.DISCARDING, registries);
+            this.serializeLogic(output);
+            return Utils.impliesNbt(output.buildResult(), tag);
         }
         return false;
     }
@@ -287,7 +296,7 @@ public abstract class Connection implements NBTSerializable {
                 this.prevStretchStage = stage;
             }
             if (dist > MAX_LENGTH + PULL_RANGE) {
-                this.world.playSound(null, point.x, point.y, point.z, FLSounds.CORD_SNAP.get(), SoundSource.BLOCKS, 0.75F, 0.8F + this.world.random.nextFloat() * 0.3F);
+                this.world.playSound(null, point.x, point.y, point.z, FLSounds.CORD_SNAP.get(), SoundSource.BLOCKS, 0.75F, 0.8F + this.world.getRandom().nextFloat() * 0.3F);
                 this.remove();
             } else if (dest.isMoving()) {
                 dest.resistSnap(from);
@@ -383,33 +392,30 @@ public abstract class Connection implements NBTSerializable {
     }
 
     @Override
-    public CompoundTag serialize(HolderLookup.Provider registries) {
-        final CompoundTag compound = new CompoundTag();
-        compound.put("destination", FastenerType.serialize(this.destination));
-        compound.put("logic", this.serializeLogic(registries));
-        compound.putFloat("slack", this.slack);
-        if (!this.drop) compound.putBoolean("drop", false);
-        return compound;
+    public void serialize(ValueOutput output) {
+        output.store("destination", FastenerType.CODEC, this.destination);
+        this.serializeLogic(output.child("logic"));
+        output.putFloat("slack", this.slack);
+        if (!this.drop) output.putBoolean("drop", false);
     }
 
     @Override
-    public void deserialize(final CompoundTag compound, HolderLookup.Provider registries) {
-        this.destination = FastenerType.deserialize(compound.getCompound("destination"));
-        this.deserializeLogic(compound.getCompound("logic"), registries);
-        this.slack = compound.contains("slack", Tag.TAG_ANY_NUMERIC) ? compound.getFloat("slack") : 1;
-        this.drop = !compound.contains("drop", Tag.TAG_ANY_NUMERIC) || compound.getBoolean("drop");
+    public void deserialize(ValueInput input) {
+        this.destination = input.read("destination", FastenerType.CODEC).orElseThrow();
+        this.deserializeLogic(input.childOrEmpty("logic"));
+        this.slack = input.getFloatOr("slack", 1);
+        this.drop = input.getBooleanOr("drop", false);
         this.updateCatenary = true;
     }
 
-    public CompoundTag serializeLogic(HolderLookup.Provider registries) {
-        return new CompoundTag();
+    public void serializeLogic(ValueOutput output) {
     }
 
     public DataComponentMap serializeItem() {
         return DataComponentMap.EMPTY;
     }
 
-    public void deserializeLogic(final CompoundTag compound, HolderLookup.Provider registries) {}
+    public void deserializeLogic(final ValueInput input) {}
     public void deserializeLogic(final DataComponentMap components) {}
 
     static class Segment implements Feature {

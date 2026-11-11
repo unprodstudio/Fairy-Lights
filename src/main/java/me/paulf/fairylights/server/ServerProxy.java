@@ -1,6 +1,6 @@
 package me.paulf.fairylights.server;
 
-import fuzs.forgeconfigapiport.fabric.api.forge.v4.ForgeConfigRegistry;
+import fuzs.forgeconfigapiport.fabric.api.v5.ConfigRegistry;
 import me.paulf.fairylights.FairyLights;
 import me.paulf.fairylights.server.capability.CapabilityHandler;
 import me.paulf.fairylights.server.config.FLConfig;
@@ -18,13 +18,13 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.server.packs.PackType;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.level.Level;
-import net.minecraftforge.fml.config.ModConfig;
+import net.neoforged.fml.config.ModConfig;
 
 public class ServerProxy {
     public static final ServerEventHandler serverHandler = new ServerEventHandler();
 
     public void init() {
-        ForgeConfigRegistry.INSTANCE.register(FairyLights.ID, ModConfig.Type.COMMON, FLConfig.GENERAL_SPEC);
+        ConfigRegistry.INSTANCE.register(FairyLights.ID, ModConfig.Type.COMMON, FLConfig.GENERAL_SPEC);
         ResourceManagerHelper.get(PackType.SERVER_DATA)
                 .registerReloadListener(JingleManager.INSTANCE);
         this.setup();

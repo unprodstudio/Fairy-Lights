@@ -9,9 +9,11 @@ import net.minecraft.core.HolderLookup;
 import net.minecraft.core.component.DataComponentMap;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.storage.ValueInput;
+import net.minecraft.world.level.storage.ValueOutput;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
-import org.jetbrains.annotations.Nullable;
+import org.jspecify.annotations.Nullable;
 import org.ladysnake.cca.api.v3.component.Component;
 
 import java.util.List;
@@ -19,17 +21,17 @@ import java.util.Optional;
 import java.util.UUID;
 
 public interface Fastener<F extends FastenerAccessor> extends Component {
-    CompoundTag serializeNBT(HolderLookup.Provider registries);
-    void deserializeNBT(CompoundTag tag, HolderLookup.Provider registries);
+    void serializeNBT(ValueOutput output);
+    void deserializeNBT(ValueInput input);
 
     @Override
-    default void readFromNbt(CompoundTag tag, HolderLookup.Provider registryLookup) {
-        this.deserializeNBT(tag.getCompound("data"), registryLookup);
+    default void readData(ValueInput readView) {
+        this.deserializeNBT(readView.childOrEmpty("data"));
     }
 
     @Override
-    default void writeToNbt(CompoundTag tag, HolderLookup.Provider registryLookup) {
-        tag.put("data", this.serializeNBT(registryLookup));
+    default void writeData(ValueOutput writeView) {
+        this.serializeNBT(writeView.child("data"));
     }
 
     Optional<Connection> get(final UUID id);

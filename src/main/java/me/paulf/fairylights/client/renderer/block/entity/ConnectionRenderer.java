@@ -1,9 +1,9 @@
 package me.paulf.fairylights.client.renderer.block.entity;
 
 import com.mojang.blaze3d.vertex.PoseStack;
-import com.mojang.blaze3d.vertex.VertexConsumer;
 import com.mojang.math.Axis;
 import me.paulf.fairylights.client.ClientProxy;
+import me.paulf.fairylights.client.renderer.block.entity.state.connection.ConnectionRenderState;
 import me.paulf.fairylights.server.connection.Connection;
 import me.paulf.fairylights.util.Catenary;
 import me.paulf.fairylights.util.Curve;
@@ -15,13 +15,14 @@ import net.minecraft.client.model.geom.PartPose;
 import net.minecraft.client.model.geom.builders.CubeListBuilder;
 import net.minecraft.client.model.geom.builders.LayerDefinition;
 import net.minecraft.client.model.geom.builders.MeshDefinition;
-import net.minecraft.client.renderer.MultiBufferSource;
-import net.minecraft.client.renderer.RenderType;
-import net.minecraft.util.FastColor;
+import net.minecraft.client.renderer.SubmitNodeCollector;
+import net.minecraft.client.renderer.rendertype.RenderTypes;
+import net.minecraft.util.ARGB;
+import net.minecraft.util.Unit;
 
 import java.util.function.Function;
 
-public abstract class ConnectionRenderer<C extends Connection> {
+public abstract class ConnectionRenderer<C extends Connection, S extends ConnectionRenderState> {
     private final WireModel model;
     private final float wireInflate;
 
@@ -34,28 +35,34 @@ public abstract class ConnectionRenderer<C extends Connection> {
         this.wireInflate = wireInflate;
     }
 
-    public void render(final C conn, final float delta, final PoseStack matrix, final MultiBufferSource source, final int packedLight, final int packedOverlay) {
+    public abstract S createRenderState();
+
+    public void extractRenderState(C conn, S state, float delta) {
         final Curve currCat = conn.getCatenary();
         final Curve prevCat = conn.getPrevCatenary();
+
         if (currCat != null && prevCat != null) {
-            final Curve cat = prevCat.lerp(currCat, delta);
+            state.catenary = prevCat.lerp(currCat, delta);
+            state.wireColor = this.getWireColor(conn);
+        }
+    }
+
+    public void submit(final S state, final PoseStack matrix, final SubmitNodeCollector collector) {
+        if (state.catenary != null) {
+            final Curve cat = state.catenary;
             final Curve.SegmentIterator it = cat.iterator();
-            final VertexConsumer buf = ClientProxy.SOLID_TEXTURE.buffer(source, RenderType::entityCutout);
-            final int color = this.getWireColor(conn);
-            final float r = ((color >> 16) & 0xFF) / 255.0F;
-            final float g = ((color >> 8) & 0xFF) / 255.0F;
-            final float b = (color & 0xFF) / 255.0F;
+            final int color = ARGB.opaque(state.wireColor);
             while (it.next()) {
                 matrix.pushPose();
                 matrix.translate(it.getX(0.0F), it.getY(0.0F),  it.getZ(0.0F));
-                matrix.mulPose(Axis.YP.rotation(FLMth.PI / 2.0F - it.getYaw()));
-                matrix.mulPose(Axis.XP.rotation(-it.getPitch()));
+                matrix.rotate(Axis.YP.rotation(FLMth.PI / 2.0F - it.getYaw()));
+                matrix.rotate(Axis.XP.rotation(-it.getPitch()));
                 matrix.scale(1.0F + this.wireInflate, 1.0F, it.getLength() * 16.0F);
-                this.model.renderToBuffer(matrix, buf, packedLight, packedOverlay, FastColor.ARGB32.colorFromFloat(1f, r, g, b));
+                collector.submitModel(this.model, Unit.INSTANCE, matrix, RenderTypes.entityCutout(ClientProxy.SOLID_TEXTURE), state.lightCoords, state.overlayCoords, color, null, 0);
                 matrix.popPose();
-                this.renderSegment(conn, it, delta, matrix, packedLight, source, packedOverlay);
+                this.submitSegment(state, it, matrix, collector);
             }
-            this.render(conn, cat, delta, matrix, source, packedLight, packedOverlay);
+            this.submit(state, cat, matrix, collector);
         }
     }
 
@@ -63,21 +70,13 @@ public abstract class ConnectionRenderer<C extends Connection> {
         return 0xFFFFFF;
     }
 
-    protected void render(final C conn, final Curve catenary, final float delta, final PoseStack matrix, final MultiBufferSource source, final int packedLight, final int packedOverlay) {}
+    protected void submit(final S state, final Curve catenary, final PoseStack matrix, final SubmitNodeCollector collector) {}
 
-    protected void renderSegment(final C connection, final Catenary.SegmentView it, final float delta, final PoseStack matrix, final int packedLight, final MultiBufferSource source, final int packedOverlay) {}
+    protected void submitSegment(final S state, final Catenary.SegmentView it, final PoseStack matrix, final SubmitNodeCollector collector) {}
 
-    public static class WireModel extends Model {
-        final ModelPart root;
-
+    public static class WireModel extends Model<Unit> {
         WireModel(final ModelPart root) {
-            super(RenderType::entityCutout);
-            this.root = root;
-        }
-
-        @Override
-        public void renderToBuffer(final PoseStack matrix, final VertexConsumer builder, final int light, final int overlay, final int color) {
-            this.root.render(matrix, builder, light, overlay, color);
+            super(root, RenderTypes::entityCutout);
         }
 
         public static LayerDefinition createLayer(final int u, final int v, final int size) {

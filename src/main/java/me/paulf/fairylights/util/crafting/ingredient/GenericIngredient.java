@@ -4,6 +4,7 @@ import com.google.common.collect.ImmutableList;
 import me.paulf.fairylights.server.item.components.ModifiableDataComponentMap;
 import me.paulf.fairylights.util.crafting.GenericRecipe;
 import net.minecraft.network.chat.Component;
+import net.minecraft.util.context.ContextMap;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.crafting.Ingredient;
 
@@ -43,7 +44,7 @@ public interface GenericIngredient<I extends GenericIngredient<I, M>, M extends 
 
     default ImmutableList<ItemStack> getMatchingSubtypes(final Ingredient stack) {
         Objects.requireNonNull(stack, "stack");
-        return ImmutableList.copyOf(stack.getItems());
+        return ImmutableList.copyOf(stack.display().resolveForStacks(ContextMap.EMPTY));
     }
 
     default void addTooltip(final List<Component> tooltip) {}

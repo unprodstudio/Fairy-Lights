@@ -2,9 +2,11 @@ package me.paulf.fairylights.util;
 
 import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.world.level.storage.ValueInput;
+import net.minecraft.world.level.storage.ValueOutput;
 
 public interface NBTSerializable {
-    CompoundTag serialize(HolderLookup.Provider registries);
+    void serialize(ValueOutput output);
 
-    void deserialize(CompoundTag compound, HolderLookup.Provider registries);
+    void deserialize(ValueInput input);
 }

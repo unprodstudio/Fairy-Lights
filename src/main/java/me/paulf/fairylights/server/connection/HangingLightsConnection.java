@@ -1,6 +1,6 @@
 package me.paulf.fairylights.server.connection;
 
-import io.github.fabricators_of_create.porting_lib.transfer.item.ItemHandlerHelper;
+import me.paulf.fairylights.FairyLights;
 import me.paulf.fairylights.server.block.FLBlocks;
 import me.paulf.fairylights.server.fastener.Fastener;
 import me.paulf.fairylights.server.feature.FeatureType;
@@ -16,6 +16,7 @@ import me.paulf.fairylights.server.jingle.JinglePlayer;
 import me.paulf.fairylights.server.sound.FLSounds;
 import me.paulf.fairylights.server.string.StringType;
 import me.paulf.fairylights.server.string.StringTypes;
+import me.paulf.fairylights.util.fabric.ItemHandlerHelper;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.core.component.DataComponentMap;
@@ -32,8 +33,10 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.level.LightLayer;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.LightBlock;
+import net.minecraft.world.level.storage.ValueInput;
+import net.minecraft.world.level.storage.ValueOutput;
 import net.minecraft.world.phys.Vec3;
-import org.jetbrains.annotations.Nullable;
+import org.jspecify.annotations.Nullable;
 
 import java.util.*;
 
@@ -131,7 +134,7 @@ public final class HangingLightsConnection extends HangingFeatureConnection<Ligh
             if (this.lightUpdateTime > LIGHT_UPDATE_WAIT && this.lightUpdateTime % LIGHT_UPDATE_RATE == 0) {
                 if (this.lightUpdateIndex >= this.features.length) {
                     this.lightUpdateIndex = 0;
-                    this.lightUpdateTime = this.world.random.nextInt(LIGHT_UPDATE_WAIT / 2);
+                    this.lightUpdateTime = this.world.getRandom().nextInt(LIGHT_UPDATE_WAIT / 2);
                 } else {
                     this.setLight(BlockPos.containing(this.features[this.lightUpdateIndex++].getAbsolutePoint(this.fastener)));
                 }
@@ -241,47 +244,42 @@ public final class HangingLightsConnection extends HangingFeatureConnection<Ligh
     }
 
     @Override
-    public CompoundTag serialize(HolderLookup.Provider registries) {
-        final CompoundTag compound = super.serialize(registries);
-        compound.put("jinglePlayer", this.jinglePlayer.serialize());
-        compound.putBoolean("isOn", this.isOn);
-        final ListTag litBlocks = new ListTag();
+    public void serialize(ValueOutput output) {
+        super.serialize(output);
+        output.store("jinglePlayer", JinglePlayer.CODEC, this.jinglePlayer);
+        output.putBoolean("isOn", this.isOn);
+        var litBlocks = output.childrenList("litBlocks");
         for (final BlockPos litBlock : this.litBlocks) {
-            var tag = new CompoundTag();
-            tag.put("pos", NbtUtils.writeBlockPos(litBlock));
-            litBlocks.add(tag);
+            var tag = litBlocks.addChild();
+            tag.store("pos", BlockPos.CODEC, litBlock);
         }
-        compound.put("litBlocks", litBlocks);
-        return compound;
     }
 
     @Override
-    public void deserialize(final CompoundTag compound, HolderLookup.Provider registries) {
-        super.deserialize(compound, registries);
+    public void deserialize(ValueInput input) {
+        super.deserialize(input);
         if (this.jinglePlayer == null) {
             this.jinglePlayer = new JinglePlayer();
         }
         if (!this.jinglePlayer.isPlaying()) {
-            this.jinglePlayer.deserialize(compound.getCompound("jinglePlayer"));
+            this.jinglePlayer = input.read("jinglePlayer", JinglePlayer.CODEC).orElse(new JinglePlayer());
         }
-        this.isOn = compound.getBoolean("isOn");
+        this.isOn = input.getBooleanOr("isOn", false);
         this.litBlocks.clear();
-        final ListTag litBlocks = compound.getList("litBlocks", Tag.TAG_COMPOUND);
-        for (int i = 0; i < litBlocks.size(); i++) {
-            this.litBlocks.add(NbtUtils.readBlockPos(litBlocks.getCompound(i), "pos").orElse(BlockPos.ZERO));
+        var litBlocks = input.childrenListOrEmpty("litBlocks");
+        for (var c : litBlocks) {
+            this.litBlocks.add(c.read("pos", BlockPos.CODEC).orElse(BlockPos.ZERO));
         }
     }
 
     @Override
-    public CompoundTag serializeLogic(HolderLookup.Provider registries) {
-        final CompoundTag compound = super.serializeLogic(registries);
-        HangingLightsConnectionItem.setString(compound, this.string);
-        final ListTag tagList = new ListTag();
+    public void serializeLogic(ValueOutput output) {
+        super.serializeLogic(output);
+        output.store("string", FairyLights.STRING_TYPES.byNameCodec(), this.string);
+        final var tagList = output.list("pattern", ItemStack.OPTIONAL_CODEC);
         for (final ItemStack light : this.pattern) {
-            tagList.add(light.save(registries));
+            tagList.add(light);
         }
-        compound.put("pattern", tagList);
-        return compound;
     }
 
     @Override
@@ -295,14 +293,13 @@ public final class HangingLightsConnection extends HangingFeatureConnection<Ligh
     }
 
     @Override
-    public void deserializeLogic(final CompoundTag compound, HolderLookup.Provider registries) {
-        super.deserializeLogic(compound, registries);
-        this.string = HangingLightsConnectionItem.getString(compound);
-        final ListTag patternList = compound.getList("pattern", Tag.TAG_COMPOUND);
+    public void deserializeLogic(ValueInput input) {
+        super.deserializeLogic(input);
+        this.string = input.read("string", FairyLights.STRING_TYPES.byNameCodec()).orElseThrow();
+        final var patternList = input.listOrEmpty("pattern", ItemStack.OPTIONAL_CODEC);
         this.pattern = new ArrayList<>();
-        for (int i = 0; i < patternList.size(); i++) {
-            final CompoundTag lightCompound = patternList.getCompound(i);
-            this.pattern.add(ItemStack.parseOptional(registries, lightCompound));
+        for (ItemStack stack : patternList) {
+            this.pattern.add(stack);
         }
     }
 

@@ -1,7 +1,5 @@
 package me.paulf.fairylights.server.block.entity;
 
-import io.github.fabricators_of_create.porting_lib.blocks.extensions.CustomRenderBoundingBoxBlockEntity;
-import io.github.fabricators_of_create.porting_lib.blocks.extensions.CustomUpdateTagHandlingBlockEntity;
 import me.paulf.fairylights.server.block.FLBlocks;
 import me.paulf.fairylights.server.block.FastenerBlock;
 import me.paulf.fairylights.server.capability.CapabilityHandler;
@@ -19,14 +17,24 @@ import net.minecraft.world.phys.Vec3;
 
 import java.util.Optional;
 
-public final class FastenerBlockEntity extends BlockEntity implements CustomRenderBoundingBoxBlockEntity, CustomUpdateTagHandlingBlockEntity {
+public final class FastenerBlockEntity extends BlockEntity {
     public FastenerBlockEntity(final BlockPos pos, final BlockState state) {
         super(FLBlockEntities.FASTENER.get(), pos ,state);
     }
 
-    @Override
     public AABB getRenderBoundingBox() {
-        return this.getFastener().map(fastener -> fastener.getBounds().inflate(1)).orElseGet(CustomRenderBoundingBoxBlockEntity.super::getRenderBoundingBox);
+        return this.getFastener().map(fastener -> fastener.getBounds().inflate(1))
+            .orElseGet(() -> new AABB(this.getBlockPos()));
+    }
+
+    @Override
+    public void preRemoveSideEffects(BlockPos pos, BlockState state) {
+        if (!this.hasLevel())
+            return;
+
+        CapabilityHandler.FASTENER_CAP.maybeGet(this)
+            .ifPresent(f -> f.dropItems(this.getLevel(), pos));
+        super.preRemoveSideEffects(pos, state);
     }
 
     public Vec3 getOffset() {

@@ -10,7 +10,7 @@ import me.paulf.fairylights.client.ClientEventHandler;
 import me.paulf.fairylights.client.midi.MidiJingler;
 import me.paulf.fairylights.server.connection.Connection;
 import me.paulf.fairylights.server.connection.HangingLightsConnection;
-import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientWorldEvents;
+import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientLevelEvents;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents;
 import net.minecraft.ChatFormatting;
 import net.minecraft.commands.CommandSourceStack;
@@ -157,7 +157,7 @@ public final class JinglerCommand {
                 e.getFontRenderer()
             );
         });*/
-        ClientWorldEvents.AFTER_CLIENT_WORLD_CHANGE.register((minecraft, clientLevel) -> {
+        ClientLevelEvents.AFTER_CLIENT_LEVEL_CHANGE.register((minecraft, clientLevel) -> {
             if (USED_COMMAND.compareAndSet(true, false)) {
                 getDevices().forEach(JinglerCommand::close);
             }

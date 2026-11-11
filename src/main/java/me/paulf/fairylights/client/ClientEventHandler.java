@@ -15,35 +15,40 @@ import me.paulf.fairylights.server.fastener.Fastener;
 import me.paulf.fairylights.server.fastener.FastenerType;
 import me.paulf.fairylights.server.jingle.Jingle;
 import me.paulf.fairylights.util.Curve;
-import net.fabricmc.fabric.api.client.rendering.v1.WorldRenderContext;
-import net.fabricmc.fabric.api.client.rendering.v1.WorldRenderEvents;
+import net.fabricmc.fabric.api.client.rendering.v1.RenderStateDataKey;
+import net.fabricmc.fabric.api.client.rendering.v1.level.LevelExtractionContext;
+import net.fabricmc.fabric.api.client.rendering.v1.level.LevelExtractionEvents;
+import net.fabricmc.fabric.api.client.rendering.v1.level.LevelRenderEvents;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.Gui;
-import net.minecraft.client.gui.GuiGraphics;
-import net.minecraft.client.renderer.LevelRenderer;
-import net.minecraft.client.renderer.MultiBufferSource;
-import net.minecraft.client.renderer.RenderType;
-import net.minecraft.nbt.CompoundTag;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
+import net.minecraft.client.renderer.rendertype.RenderTypes;
 import net.minecraft.network.protocol.Packet;
 import net.minecraft.network.protocol.PacketType;
 import net.minecraft.network.protocol.game.ClientGamePacketListener;
 import net.minecraft.network.syncher.SynchedEntityData;
 import net.minecraft.server.level.ServerEntity;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.util.ARGB;
 import net.minecraft.util.Mth;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.Entity;
-import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.EntityTypes;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.chunk.ChunkSource;
 import net.minecraft.world.level.chunk.LevelChunk;
+import net.minecraft.world.level.storage.ValueInput;
+import net.minecraft.world.level.storage.ValueOutput;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.EntityHitResult;
 import net.minecraft.world.phys.Vec3;
-import org.jetbrains.annotations.Nullable;
+import net.minecraft.world.phys.shapes.Shapes;
+import org.jspecify.annotations.Nullable;
 import org.joml.Vector3f;
 
 import java.util.List;
@@ -53,9 +58,35 @@ public final class ClientEventHandler {
     private static final float HIGHLIGHT_ALPHA = 0.4F;
 
     public ClientEventHandler() {
-        WorldRenderEvents.BEFORE_BLOCK_OUTLINE.register((worldRenderContext, hitResult) -> {
-            if (hitResult instanceof EntityHitResult entityHitResult) {
-                drawBlockHighlight(worldRenderContext, entityHitResult);
+        LevelExtractionEvents.AFTER_BLOCK_OUTLINE_EXTRACTION.register((context, result) -> {
+            if (result instanceof EntityHitResult entityHitResult) {
+                extractBlockHighlight(context, entityHitResult);
+            }
+        });
+
+        LevelRenderEvents.BEFORE_BLOCK_OUTLINE.register((context, outlineRenderState) -> {
+            var state = context.levelState();
+
+            var pos = state.getDataOrDefault(POSITION_KEY, Vec3.ZERO);
+            var outline = state.getData(OUTLINE_KEY);
+            var curveData = state.getData(CURVE_KEY);
+
+            if (outline != null) {
+                context.poseStack().pushPose();
+                context.poseStack().translate(pos.x(), pos.y(), pos.z());
+                context.submitNodeCollector().submitShapeOutline(context.poseStack(), Shapes.create(outline), RenderTypes.LINES, ARGB.colorFromFloat(HIGHLIGHT_ALPHA, 0f, 0f, 0f), context.gameRenderer().gameRenderState().windowRenderState.appropriateLineWidth, true);
+                context.poseStack().popPose();
+
+                return false;
+            } else if (curveData != null) {
+                context.poseStack().pushPose();
+                context.poseStack().translate(pos.x(), pos.y(), pos.z());
+                context.submitNodeCollector().submitCustomGeometry(context.poseStack(), RenderTypes.LINES, (pose, buffer) -> {
+                    submitHighlight(curveData, pose, buffer);
+                });
+                context.poseStack().popPose();
+
+                return false;
             }
 
             return true;
@@ -74,7 +105,7 @@ public final class ClientEventHandler {
         return null;
     }
 
-    public void renderOverlay(final Gui gui, final GuiGraphics poseStack, final float partialTick, final int screenWidth, final int screenHeight) {
+    public void renderOverlay(final Gui gui, final GuiGraphicsExtractor poseStack, final float partialTick, final int screenWidth, final int screenHeight) {
         final Connection conn = getHitConnection();
         if (!(conn instanceof HangingLightsConnection)) {
             return;
@@ -89,11 +120,12 @@ public final class ClientEventHandler {
         for (int i = 0; i < lines.size(); i++) {
             final String line = lines.get(i);
             if (!Strings.isNullOrEmpty(line)) {
-                final int lineHeight = gui.getFont().lineHeight;
-                final int textWidth = gui.getFont().width(line);
+                Font font = Minecraft.getInstance().font;
+                final int lineHeight = font.lineHeight;
+                final int textWidth = font.width(line);
                 final int y = 2 + lineHeight * i;
                 poseStack.fill(1, y - 1, 2 + textWidth + 1, y + lineHeight - 1, 0x90505050);
-                poseStack.drawString(gui.getFont(), line, 2, y, 0xe0e0e0);
+                poseStack.text(font, line, 2, y, 0xFFe0e0e0);
             }
         }
     }
@@ -177,46 +209,49 @@ public final class ClientEventHandler {
         return new HitResult(found, rayTrace);
     }
 
-    public void drawBlockHighlight(WorldRenderContext renderContext, EntityHitResult hitResult) {
+    private static final RenderStateDataKey<AABB> OUTLINE_KEY = RenderStateDataKey.create();
+    private static final RenderStateDataKey<Vec3> POSITION_KEY = RenderStateDataKey.create();
+    private static final RenderStateDataKey<CurveData> CURVE_KEY = RenderStateDataKey.create();
+
+    private record CurveData(float radius, Curve curve) {}
+
+    public void extractBlockHighlight(LevelExtractionContext renderContext, EntityHitResult hitResult) {
         final Entity entity = hitResult.getEntity();
-        final Vec3 pos = renderContext.camera().getPosition();
-        final MultiBufferSource buf = renderContext.consumers();
-        if (entity instanceof FenceFastenerEntity) {
-            this.drawFenceFastenerHighlight((FenceFastenerEntity) entity, renderContext.matrixStack(), buf.getBuffer(RenderType.lines()), renderContext.tickCounter().getGameTimeDeltaPartialTick(true), pos.x, pos.y, pos.z);
+        final Vec3 pos = renderContext.camera().position();
+        if (entity instanceof FenceFastenerEntity fence) {
+            final Player player = Minecraft.getInstance().player;
+            // Check if the server will allow interaction
+            if (player != null && (player.hasLineOfSight(fence) || player.distanceToSqr(fence) <= 9.0D)) {
+                final AABB selection = fence.getBoundingBox().move(-pos.x, -pos.y, -pos.z).inflate(0.002D);
+                renderContext.levelState().setData(POSITION_KEY, pos);
+                renderContext.levelState().setData(OUTLINE_KEY, selection);
+            }
         } else if (entity instanceof final HitConnection hit) {
             if (hit.result.intersection.getFeatureType() == Connection.CORD_FEATURE) {
-                final PoseStack matrix = renderContext.matrixStack();
-                matrix.pushPose();
+                final Curve cat = hit.result.connection.getCatenary();
+                if (cat == null) {
+                    return;
+                }
+
                 final Vec3 p = hit.result.connection.getFastener().getConnectionPoint();
-                matrix.translate(p.x - pos.x, p.y - pos.y, p.z - pos.z);
-                this.renderHighlight(hit.result.connection, matrix, buf.getBuffer(RenderType.lines()));
-                matrix.popPose();
+                renderContext.levelState().setData(POSITION_KEY, p);
+                renderContext.levelState().setData(CURVE_KEY, new CurveData(hit.result.connection.getRadius(), cat));
             } else {
                 final AABB bb = hit.result.intersection.getHitBox().move(-pos.x, -pos.y, -pos.z).inflate(0.002D);
-                LevelRenderer.renderLineBox(renderContext.matrixStack(), buf.getBuffer(RenderType.lines()), bb, 0.0F, 0.0F, 0.0F, HIGHLIGHT_ALPHA);
+                renderContext.levelState().setData(POSITION_KEY, pos);
+                renderContext.levelState().setData(OUTLINE_KEY, bb);
             }
         }
     }
 
-    private void drawFenceFastenerHighlight(final FenceFastenerEntity fence, final PoseStack matrix, final VertexConsumer buf, final float delta, final double dx, final double dy, final double dz) {
-        final Player player = Minecraft.getInstance().player;
-        // Check if the server will allow interaction
-        if (player != null && (player.hasLineOfSight(fence) || player.distanceToSqr(fence) <= 9.0D)) {
-            final AABB selection = fence.getBoundingBox().move(-dx, -dy, -dz).inflate(0.002D);
-            LevelRenderer.renderLineBox(matrix, buf, selection, 0.0F, 0.0F, 0.0F, HIGHLIGHT_ALPHA);
-        }
-    }
+    private void submitHighlight(final CurveData data, final PoseStack.Pose matrix, final VertexConsumer buf) {
+        final Curve cat = data.curve();
 
-    private void renderHighlight(final Connection connection, final PoseStack matrix, final VertexConsumer buf) {
-        final Curve cat = connection.getCatenary();
-        if (cat == null) {
-            return;
-        }
         final Vector3f p = new Vector3f();
         final Vector3f v1 = new Vector3f();
         final Vector3f v2 = new Vector3f();
         final LineBuilder builder = new LineBuilder(matrix, buf);
-        final float r = connection.getRadius() + 0.01F;
+        final float r = data.radius() + 0.01F;
         for (int edge = 0; edge < 4; edge++) {
             p.set(cat.getX(0), cat.getY(0), cat.getZ(0));
             v1.set(cat.getDx(0), cat.getDy(0), cat.getDz(0));
@@ -244,11 +279,11 @@ public final class ClientEventHandler {
     }
 
     static class LineBuilder {
-        final PoseStack matrix;
+        final PoseStack.Pose matrix;
         final VertexConsumer buf;
         Vector3f last;
 
-        LineBuilder(PoseStack matrix, VertexConsumer buf) {
+        LineBuilder(PoseStack.Pose matrix, VertexConsumer buf) {
             this.matrix = matrix;
             this.buf = buf;
         }
@@ -260,11 +295,11 @@ public final class ClientEventHandler {
                 Vector3f n = new Vector3f(pos);
                 n.sub(this.last);
                 n.normalize();
-                n = this.matrix.last().normal().transform(n);
-                this.buf.addVertex(this.matrix.last().pose(), this.last.x(), this.last.y(), this.last.z())
+                n = this.matrix.normal().transform(n);
+                this.buf.addVertex(this.matrix.pose(), this.last.x(), this.last.y(), this.last.z())
                     .setColor(0.0F, 0.0F, 0.0F, HIGHLIGHT_ALPHA)
                     .setNormal(n.x(), n.y(), n.z());
-                this.buf.addVertex(this.matrix.last().pose(), pos.x(), pos.y(), pos.z())
+                this.buf.addVertex(this.matrix.pose(), pos.x(), pos.y(), pos.z())
                     .setColor(0.0F, 0.0F, 0.0F, HIGHLIGHT_ALPHA)
                     .setNormal(n.x(), n.y(), n.z());
                 this.last = null;
@@ -307,14 +342,14 @@ public final class ClientEventHandler {
         final ClientEventHandler.HitResult result;
 
         HitConnection(final Level world, final ClientEventHandler.HitResult result) {
-            super(EntityType.ITEM, world);
+            super(EntityTypes.ITEM, world);
             this.setId(-1);
             this.result = result;
             this.setPos(result.intersection.getResult());
         }
 
         @Override
-        public boolean hurt(final DamageSource source, final float amount) {
+        public boolean hurtServer(ServerLevel level, final DamageSource source, final float amount) {
             if (source.getEntity() == Minecraft.getInstance().player) {
                 this.processAction(PlayerAction.ATTACK);
                 return true;
@@ -323,12 +358,12 @@ public final class ClientEventHandler {
         }
 
         @Override
-        public InteractionResult interact(final Player player, final InteractionHand hand) {
+        public InteractionResult interact(Player player, InteractionHand hand, Vec3 location) {
             if (player == Minecraft.getInstance().player) {
                 this.processAction(PlayerAction.INTERACT);
                 return InteractionResult.SUCCESS;
             }
-            return super.interact(player, hand);
+            return super.interact(player, hand, location);
         }
 
         private void processAction(final PlayerAction action) {
@@ -345,11 +380,11 @@ public final class ClientEventHandler {
         }
 
         @Override
-        protected void addAdditionalSaveData(final CompoundTag compound) {
+        protected void addAdditionalSaveData(ValueOutput output) {
         }
 
         @Override
-        protected void readAdditionalSaveData(final CompoundTag compound) {
+        protected void readAdditionalSaveData(ValueInput input) {
         }
 
         @Override

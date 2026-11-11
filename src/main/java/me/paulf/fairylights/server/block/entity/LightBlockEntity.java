@@ -1,6 +1,5 @@
 package me.paulf.fairylights.server.block.entity;
 
-import io.github.fabricators_of_create.porting_lib.blocks.extensions.CustomUpdateTagHandlingBlockEntity;
 import me.paulf.fairylights.server.block.LightBlock;
 import me.paulf.fairylights.server.feature.light.Light;
 import me.paulf.fairylights.server.item.LightVariant;
@@ -19,10 +18,12 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.AttachFace;
+import net.minecraft.world.level.storage.ValueInput;
+import net.minecraft.world.level.storage.ValueOutput;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.Vec3;
 
-public class LightBlockEntity extends BlockEntity implements CustomUpdateTagHandlingBlockEntity {
+public class LightBlockEntity extends BlockEntity {
     private Light<?> light;
 
     private boolean on = true;
@@ -95,17 +96,17 @@ public class LightBlockEntity extends BlockEntity implements CustomUpdateTagHand
     }
 
     @Override
-    protected void saveAdditional(CompoundTag compound, HolderLookup.Provider providers) {
-        super.saveAdditional(compound, providers);
-        compound.put("item", this.light.getItem().save(providers));
-        compound.putBoolean("on", this.on);
+    protected void saveAdditional(ValueOutput output) {
+        super.saveAdditional(output);
+        output.store("item", ItemStack.OPTIONAL_CODEC, this.light.getItem());
+        output.putBoolean("on", this.on);
     }
 
     @Override
-    public void loadAdditional(CompoundTag compound, HolderLookup.Provider providers) {
-        super.loadAdditional(compound, providers);
-        if (compound.contains("item"))
-            this.setItemStack(ItemStack.parse(providers, compound.get("item")).orElse(ItemStack.EMPTY));
-        this.setOn(compound.getBoolean("on"));
+    public void loadAdditional(ValueInput input) {
+        super.loadAdditional(input);
+        input.read("item", ItemStack.OPTIONAL_CODEC)
+            .ifPresent(this::setItemStack);
+        this.setOn(input.getBooleanOr("on", false));
     }
 }

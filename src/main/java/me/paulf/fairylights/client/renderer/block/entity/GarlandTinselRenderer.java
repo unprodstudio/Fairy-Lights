@@ -5,6 +5,7 @@ import com.mojang.blaze3d.vertex.VertexConsumer;
 import com.mojang.math.Axis;
 import me.paulf.fairylights.client.ClientProxy;
 import me.paulf.fairylights.client.FLModelLayers;
+import me.paulf.fairylights.client.renderer.block.entity.state.connection.GarlandTinselConnectionRenderState;
 import me.paulf.fairylights.server.connection.GarlandTinselConnection;
 import me.paulf.fairylights.util.Catenary;
 import me.paulf.fairylights.util.RandomArray;
@@ -15,14 +16,15 @@ import net.minecraft.client.model.geom.PartPose;
 import net.minecraft.client.model.geom.builders.CubeListBuilder;
 import net.minecraft.client.model.geom.builders.LayerDefinition;
 import net.minecraft.client.model.geom.builders.MeshDefinition;
-import net.minecraft.client.renderer.MultiBufferSource;
-import net.minecraft.client.renderer.RenderType;
-import net.minecraft.util.FastColor;
+import net.minecraft.client.renderer.SubmitNodeCollector;
+import net.minecraft.client.renderer.rendertype.RenderTypes;
+import net.minecraft.util.ARGB;
 import net.minecraft.util.Mth;
+import net.minecraft.util.Unit;
 
 import java.util.function.Function;
 
-public class GarlandTinselRenderer extends ConnectionRenderer<GarlandTinselConnection> {
+public class GarlandTinselRenderer extends ConnectionRenderer<GarlandTinselConnection, GarlandTinselConnectionRenderState> {
     private static final RandomArray RAND = new RandomArray(9171, 128);
 
     private final StripModel strip;
@@ -38,21 +40,29 @@ public class GarlandTinselRenderer extends ConnectionRenderer<GarlandTinselConne
     }
 
     @Override
-    protected void renderSegment(final GarlandTinselConnection connection, final Catenary.SegmentView it, final float delta, final PoseStack matrix, final int packedLight, final MultiBufferSource source, final int packedOverlay) {
-        super.renderSegment(connection, it, delta, matrix, packedLight, source, packedOverlay);
-        final int color = connection.getColor();
-        final float r = ((color >> 16) & 0xFF) / 255.0F;
-        final float g = ((color >> 8) & 0xFF) / 255.0F;
-        final float b = (color & 0xFF) / 255.0F;
+    public GarlandTinselConnectionRenderState createRenderState() {
+        return new GarlandTinselConnectionRenderState();
+    }
+
+    @Override
+    public void extractRenderState(GarlandTinselConnection conn, GarlandTinselConnectionRenderState state, float delta) {
+        super.extractRenderState(conn, state, delta);
+        state.color = conn.getColor();
+        state.hash = conn.getUUID().hashCode();
+    }
+
+    @Override
+    protected void submitSegment(final GarlandTinselConnectionRenderState connection, final Catenary.SegmentView it, final PoseStack matrix, final SubmitNodeCollector collector) {
+        super.submitSegment(connection, it, matrix, collector);
+        final int color = ARGB.opaque(connection.color);
         matrix.pushPose();
         matrix.translate(it.getX(0.0F), it.getY(0.0F), it.getZ(0.0F));
-        matrix.mulPose(Axis.YP.rotation(-it.getYaw()));
-        matrix.mulPose(Axis.ZP.rotation(it.getPitch()));
+        matrix.rotate(Axis.YP.rotation(-it.getYaw()));
+        matrix.rotate(Axis.ZP.rotation(it.getPitch()));
         final float length = it.getLength();
         final int rings = Mth.ceil(length * 64);
-        final int hash = connection.getUUID().hashCode();
+        final int hash = connection.hash;
         final int index = it.getIndex();
-        final VertexConsumer buf = ClientProxy.SOLID_TEXTURE.buffer(source, RenderType::entityCutout);
         for (int i = 0; i < rings; i++) {
             final double t = i / (float) rings * length;
             matrix.pushPose();
@@ -60,11 +70,11 @@ public class GarlandTinselRenderer extends ConnectionRenderer<GarlandTinselConne
             final float rotX = RAND.get(31 * (index + 31 * i) + hash) * 22;
             final float rotY = RAND.get(31 * (index + 3 + 31 * i) + hash) * 180;
             final float rotZ = RAND.get(31 * (index + 7 + 31 * i) + hash) * 180;
-            matrix.mulPose(Axis.XP.rotationDegrees(rotZ));
-            matrix.mulPose(Axis.YP.rotationDegrees(rotY));
-            matrix.mulPose(Axis.ZP.rotationDegrees(rotX));
+            matrix.rotate(Axis.XP.rotationDegrees(rotZ));
+            matrix.rotate(Axis.YP.rotationDegrees(rotY));
+            matrix.rotate(Axis.ZP.rotationDegrees(rotX));
             matrix.scale(1.0F, RAND.get(i * 63) * 0.1F + 1.0F, 0.5F);
-            this.strip.renderToBuffer(matrix, buf, packedLight, packedOverlay, FastColor.ARGB32.colorFromFloat(1f, r, g, b));
+            collector.submitModel(this.strip, Unit.INSTANCE, matrix, RenderTypes.entityCutout(ClientProxy.SOLID_TEXTURE), connection.lightCoords, connection.overlayCoords, color, null, 0);
             matrix.popPose();
         }
         
@@ -75,12 +85,9 @@ public class GarlandTinselRenderer extends ConnectionRenderer<GarlandTinselConne
         return WireModel.createLayer(62, 0, 1);
     }
 
-    public static class StripModel extends Model {
-        final ModelPart root;
-
+    public static class StripModel extends Model<Unit> {
         StripModel(final ModelPart root) {
-            super(RenderType::entityCutout);
-            this.root = root;
+            super(root, RenderTypes::entityCutout);
         }
 
         public static LayerDefinition createLayer() {
@@ -89,11 +96,6 @@ public class GarlandTinselRenderer extends ConnectionRenderer<GarlandTinselConne
                 .texOffs(62, 0)
                 .addBox(-0.5F, -3.0F, 0.0F, 1.0F, 6.0F, 0.0F), PartPose.ZERO);
             return LayerDefinition.create(mesh, 128, 128);
-        }
-
-        @Override
-        public void renderToBuffer(final PoseStack matrix, final VertexConsumer builder, final int light, final int overlay, final int color) {
-            this.root.render(matrix, builder, light, overlay, color);
         }
     }
 }

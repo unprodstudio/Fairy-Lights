@@ -67,6 +67,6 @@ public final class FLBlocks {
     }
 
     private static Supplier<LightBlock> createLight(final LightVariant<?> variant, final BiFunction<Block.Properties, LightVariant<?>, LightBlock> factory) {
-        return () -> factory.apply(BlockBehaviour.Properties.of().mapColor(MapColor.METAL).forceSolidOn().strength(3.5F).sound(SoundType.LANTERN).lightLevel(state -> state.getValue(LightBlock.LIT) ? 15 : 0).noCollission(), variant);
+        return () -> factory.apply(BlockBehaviour.Properties.of().mapColor(MapColor.METAL).forceSolidOn().strength(3.5F).sound(SoundType.LANTERN).lightLevel(state -> state.getValue(LightBlock.LIT) ? 15 : 0).noCollision(), variant);
     }
 }

@@ -8,6 +8,7 @@ import me.paulf.fairylights.server.connection.ConnectionType;
 import me.paulf.fairylights.server.connection.ConnectionTypes;
 import me.paulf.fairylights.server.creativetabs.FairyLightsItemGroup;
 import me.paulf.fairylights.server.entity.FLEntities;
+import me.paulf.fairylights.server.entity.FLEntityDataSerializers;
 import me.paulf.fairylights.server.item.FLItems;
 import me.paulf.fairylights.server.item.components.FLComponents;
 import me.paulf.fairylights.server.item.crafting.FLCraftingRecipes;
@@ -29,36 +30,41 @@ import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.core.Registry;
 import net.minecraft.resources.ResourceKey;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 
 import java.time.Month;
 
 public final class FairyLights implements ModInitializer {
     public static final String ID = "fairylights";
 
-    public static final ResourceLocation STRING_TYPE = ResourceLocation.fromNamespaceAndPath(ID, "string_type");
+    public static final Identifier STRING_TYPE = Identifier.fromNamespaceAndPath(ID, "string_type");
 
-    public static final ResourceLocation CONNECTION_TYPE = ResourceLocation.fromNamespaceAndPath(ID, "connection_type");
+    public static final Identifier CONNECTION_TYPE = Identifier.fromNamespaceAndPath(ID, "connection_type");
 
     public static final CalendarEvent CHRISTMAS = new CalendarEvent(Month.DECEMBER, 24, 26);
 
     public static final CalendarEvent HALLOWEEN = new CalendarEvent(Month.OCTOBER, 31, 31);
 
-    public static Registry<ConnectionType<?>> CONNECTION_TYPES = FabricRegistryBuilder.<ConnectionType<?>>createSimple(ResourceKey.createRegistryKey(CONNECTION_TYPE))
+    public static Registry<ConnectionType<?>> CONNECTION_TYPES = FabricRegistryBuilder.<ConnectionType<?>>create(ResourceKey.createRegistryKey(CONNECTION_TYPE))
             .attribute(RegistryAttribute.MODDED)
             .buildAndRegister();
 
-    public static Registry<StringType> STRING_TYPES = FabricRegistryBuilder.<StringType>createDefaulted(ResourceKey.createRegistryKey(STRING_TYPE), ResourceLocation.fromNamespaceAndPath(ID, "black_string"))
+    public static Registry<StringType> STRING_TYPES = FabricRegistryBuilder.<StringType>createDefaulted(ResourceKey.createRegistryKey(STRING_TYPE), Identifier.fromNamespaceAndPath(ID, "black_string"))
             .attribute(RegistryAttribute.MODDED)
             .buildAndRegister();
+    
+    public static Identifier id(String name) {
+        return Identifier.fromNamespaceAndPath(FairyLights.ID, name);
+    }
 
     public void onInitialize() {
-        PayloadTypeRegistry.playC2S().register(InteractionConnectionMessage.TYPE, InteractionConnectionMessage.CODEC);
-        PayloadTypeRegistry.playC2S().register(EditLetteredConnectionMessage.TYPE, EditLetteredConnectionMessage.CODEC);
-        PayloadTypeRegistry.playS2C().register(JingleMessage.TYPE, JingleMessage.CODEC);
-        PayloadTypeRegistry.playS2C().register(UpdateEntityFastenerMessage.TYPE, UpdateEntityFastenerMessage.CODEC);
-        PayloadTypeRegistry.playS2C().register(OpenEditLetteredConnectionScreenMessage.TYPE, OpenEditLetteredConnectionScreenMessage.CODEC);
+        PayloadTypeRegistry.serverboundPlay().register(InteractionConnectionMessage.TYPE, InteractionConnectionMessage.CODEC);
+        PayloadTypeRegistry.serverboundPlay().register(EditLetteredConnectionMessage.TYPE, EditLetteredConnectionMessage.CODEC);
+        PayloadTypeRegistry.clientboundPlay().register(JingleMessage.TYPE, JingleMessage.CODEC);
+        PayloadTypeRegistry.clientboundPlay().register(UpdateEntityFastenerMessage.TYPE, UpdateEntityFastenerMessage.CODEC);
+        PayloadTypeRegistry.clientboundPlay().register(OpenEditLetteredConnectionScreenMessage.TYPE, OpenEditLetteredConnectionScreenMessage.CODEC);
 
+        FLEntityDataSerializers.init();
         ServerPlayNetworking.registerGlobalReceiver(InteractionConnectionMessage.TYPE, new InteractionConnectionMessage.Handler());
         ServerPlayNetworking.registerGlobalReceiver(EditLetteredConnectionMessage.TYPE, new EditLetteredConnectionMessage.Handler());
 

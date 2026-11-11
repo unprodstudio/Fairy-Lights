@@ -2,7 +2,7 @@ package me.paulf.fairylights.server.feature.light;
 
 import me.paulf.fairylights.server.item.components.FLComponents;
 import me.paulf.fairylights.util.FLMth;
-import net.minecraft.Util;
+import net.minecraft.util.Util;
 import net.minecraft.util.Mth;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;

@@ -11,10 +11,10 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 
 public class OpenEditLetteredConnectionScreenMessage<C extends Connection & Lettered> extends ConnectionMessage {
-    public static final Type<OpenEditLetteredConnectionScreenMessage<?>> TYPE = new Type(ResourceLocation.fromNamespaceAndPath(FairyLights.ID, "open_edit_lettered_screen"));
+    public static final Type<OpenEditLetteredConnectionScreenMessage<?>> TYPE = new Type(FairyLights.id("open_edit_lettered_screen"));
 
     @Override
     public Type<? extends CustomPacketPayload> type() {
@@ -42,7 +42,7 @@ public class OpenEditLetteredConnectionScreenMessage<C extends Connection & Lett
 
         private <C extends Connection & Lettered> void accept(final OpenEditLetteredConnectionScreenMessage<C> message) {
             ConnectionMessage.<C>getConnection(message, c -> c instanceof Lettered, Minecraft.getInstance().level).ifPresent(connection -> {
-                Minecraft.getInstance().setScreen(new EditLetteredConnectionScreen<>(connection));
+                Minecraft.getInstance().gui.setScreen(new EditLetteredConnectionScreen<>(connection));
             });
         }
     }

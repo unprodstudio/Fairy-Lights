@@ -4,10 +4,14 @@ import io.netty.buffer.Unpooled;
 import me.paulf.fairylights.FairyLights;
 import me.paulf.fairylights.mixin.fabric.AdvancementBuilderAccessor;
 import net.minecraft.advancements.*;
-import net.minecraft.advancements.critereon.RecipeUnlockedTrigger;
+import net.minecraft.advancements.triggers.CriteriaTriggers;
+import net.minecraft.advancements.triggers.Criterion;
+import net.minecraft.advancements.triggers.RecipeUnlockedTrigger;
+import net.minecraft.core.registries.Registries;
 import net.minecraft.data.recipes.RecipeOutput;
 import net.minecraft.network.RegistryFriendlyByteBuf;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
+import net.minecraft.resources.ResourceKey;
 import net.minecraft.world.item.crafting.CraftingBookCategory;
 import net.minecraft.world.item.crafting.RecipeSerializer;
 
@@ -28,17 +32,18 @@ public class GenericRecipeBuilder {
         return this;
     }
 
-    public void build(final RecipeOutput consumer, final ResourceLocation id) {
+    public void build(final RecipeOutput consumer, final Identifier id) {
+        var recipeKey = ResourceKey.create(Registries.RECIPE, id);
         final AdvancementHolder advancementHolder;
-        final ResourceLocation advancementId;
+        final Identifier advancementId;
         if (((AdvancementBuilderAccessor) this.advancementBuilder).getCriteria().build().isEmpty()) {
             advancementHolder = null;
         } else {
-            advancementId = ResourceLocation.fromNamespaceAndPath(id.getNamespace(), "recipes/" + FairyLights.ID + "/" + id.getPath());
+            advancementId = Identifier.fromNamespaceAndPath(id.getNamespace(), "recipes/" + FairyLights.ID + "/" + id.getPath());
             advancementHolder = consumer.advancement()
-                .parent(ResourceLocation.withDefaultNamespace("recipes/root"))
-                .addCriterion("has_the_recipe", CriteriaTriggers.RECIPE_UNLOCKED.createCriterion(new RecipeUnlockedTrigger.TriggerInstance(Optional.empty(), id)))
-                .rewards(AdvancementRewards.Builder.recipe(id))
+                .parent(Identifier.withDefaultNamespace("recipes/root"))
+                .addCriterion("has_the_recipe", RecipeUnlockedTrigger.unlocked(consumer.lookup(Registries.RECIPE).getOrThrow(recipeKey)))
+                .rewards(AdvancementRewards.Builder.recipe(recipeKey))
                 .requirements(AdvancementRequirements.Strategy.OR)
                 .build(advancementId);
         }
@@ -48,7 +53,7 @@ public class GenericRecipeBuilder {
         buf.writeEnum(CraftingBookCategory.MISC);
         buf.resetReaderIndex();
 
-        consumer.accept(id, this.serializer.streamCodec().decode(buf), advancementHolder);
+        consumer.accept(recipeKey, this.serializer.streamCodec().decode(buf), advancementHolder);
     }
 
     public static GenericRecipeBuilder customRecipe(final RecipeSerializer<?> serializer) {

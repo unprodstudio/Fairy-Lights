@@ -6,16 +6,16 @@ import com.mojang.blaze3d.vertex.VertexConsumer;
 import me.paulf.fairylights.client.ClientProxy;
 import me.paulf.fairylights.client.FLModelLayers;
 import me.paulf.fairylights.client.model.light.*;
-import me.paulf.fairylights.server.feature.light.Light;
+import me.paulf.fairylights.client.renderer.block.entity.state.LightRenderState;
 import me.paulf.fairylights.server.feature.light.LightBehavior;
 import me.paulf.fairylights.server.item.LightVariant;
 import me.paulf.fairylights.server.item.SimpleLightVariant;
 import me.paulf.fairylights.util.FLMth;
 import net.minecraft.client.model.geom.ModelLayerLocation;
 import net.minecraft.client.model.geom.ModelPart;
-import net.minecraft.client.renderer.MultiBufferSource;
-import net.minecraft.client.renderer.RenderType;
-import net.minecraft.util.FastColor;
+import net.minecraft.client.renderer.SubmitNodeCollector;
+import net.minecraft.client.renderer.rendertype.RenderTypes;
+import net.minecraft.util.ARGB;
 
 import java.util.List;
 import java.util.Map;
@@ -78,24 +78,8 @@ public class LightRenderer {
             .build();
     }
 
-    public Data start(final MultiBufferSource source) {
-        final VertexConsumer buf = ClientProxy.TRANSLUCENT_TEXTURE.buffer(source, RenderType::entityTranslucent);
-        ForwardingVertexConsumer translucent = new ForwardingVertexConsumer() {
-            @Override
-            protected VertexConsumer delegate() {
-                return buf;
-            }
-
-            @Override
-            public VertexConsumer setNormal(float x, float y, float z) {
-                return super.setNormal(0.0F, 1.0F, 0.0F);
-            }
-        };
-        return new Data(buf, translucent);
-    }
-
-    public <T extends LightBehavior> LightModel<T> getModel(final Light<?> light, final int index) {
-        return this.getModel(light.getVariant(), index);
+    public <T extends LightBehavior> LightModel<T> getModel(final LightRenderState light, final int index) {
+        return this.getModel(light.variant, index);
     }
 
     @SuppressWarnings("unchecked")
@@ -103,14 +87,32 @@ public class LightRenderer {
         return (LightModel<T>) this.lights.getOrDefault(variant, this.defaultLight).get(index);
     }
 
-    public void render(final PoseStack matrix, final Data data, final Light<?> light, final int index, final float delta, final int packedLight, final int packedOverlay) {
-        this.render(matrix, data, light, this.getModel(light, index), delta, packedLight, packedOverlay);
+    public void submit(final PoseStack matrix, final SubmitNodeCollector collector, final LightRenderState light, final int index, final int packedLight, final int packedOverlay) {
+        this.submit(matrix, collector, light, this.getModel(light, index), packedLight, packedOverlay);
     }
 
-    public <T extends LightBehavior> void render(final PoseStack matrix, final Data data, final Light<T> light, final LightModel<T> model, final float delta, final int packedLight, final int packedOverlay) {
-        model.animate(light, light.getBehavior(), delta);
-        model.renderToBuffer(matrix, data.solid, packedLight, packedOverlay, FastColor.ARGB32.color(255, 255, 255, 255));
-        model.renderTranslucent(matrix, data.translucent, packedLight, packedOverlay, FastColor.ARGB32.color(255, 255, 255, 255));
+    public <T extends LightBehavior> void submit(final PoseStack matrix, final SubmitNodeCollector collector, final LightRenderState light, final LightModel<T> model, final int packedLight, final int packedOverlay) {
+        var renderType = RenderTypes.entityTranslucent(ClientProxy.TRANSLUCENT_TEXTURE);
+        collector.submitModel(model, light, matrix, renderType, packedLight, packedOverlay, -1, null, 0);
+
+        collector.submitCustomGeometry(matrix, renderType, (pose, buf) -> {
+            ForwardingVertexConsumer translucent = new ForwardingVertexConsumer() {
+                @Override
+                protected VertexConsumer delegate() {
+                    return buf;
+                }
+
+                @Override
+                public VertexConsumer setNormal(float x, float y, float z) {
+                    return super.setNormal(0.0F, 1.0F, 0.0F);
+                }
+            };
+
+            var mat = new PoseStack();
+            mat.last().pose().set(pose.pose());
+            mat.last().normal().set(pose.normal());
+            model.renderTranslucent(matrix, translucent, packedLight, packedOverlay, -1);
+        });
     }
 
     interface LightModelProvider<T extends LightBehavior> {
@@ -126,16 +128,6 @@ public class LightRenderer {
 
         static <T extends LightBehavior, D> LightModelProvider<T> of(final D data, final BiFunction<? super D, Integer, LightModel<T>> function) {
             return i -> function.apply(data, i);
-        }
-    }
-
-    static class Data {
-        final VertexConsumer solid;
-        final VertexConsumer translucent;
-
-        Data(final VertexConsumer solid, final VertexConsumer translucent) {
-            this.solid = solid;
-            this.translucent = translucent;
         }
     }
 

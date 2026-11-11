@@ -1,9 +1,9 @@
 package me.paulf.fairylights.server.item.crafting;
 
 import com.google.common.collect.ImmutableList;
+import com.mojang.serialization.*;
 import dev.architectury.registry.registries.DeferredRegister;
 import dev.architectury.registry.registries.RegistrySupplier;
-import io.github.fabricators_of_create.porting_lib.tags.Tags;
 import me.paulf.fairylights.FairyLights;
 import me.paulf.fairylights.server.item.DyeableItem;
 import me.paulf.fairylights.server.item.FLItems;
@@ -16,14 +16,21 @@ import me.paulf.fairylights.util.Utils;
 import me.paulf.fairylights.util.crafting.GenericRecipe;
 import me.paulf.fairylights.util.crafting.GenericRecipeBuilder;
 import me.paulf.fairylights.util.crafting.ingredient.*;
-import me.paulf.fairylights.util.styledstring.StyledString;
 import net.fabricmc.fabric.api.tag.convention.v2.ConventionalItemTags;
+import net.minecraft.core.Holder;
+import net.minecraft.core.HolderLookup;
+import net.minecraft.core.HolderSet;
+import net.minecraft.core.Registry;
 import net.minecraft.core.component.DataComponentMap;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.nbt.IntTag;
 import net.minecraft.nbt.ListTag;
+import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.network.codec.StreamCodec;
+import net.minecraft.resources.Identifier;
+import net.minecraft.resources.RegistryOps;
+import net.minecraft.resources.ResourceKey;
 import net.minecraft.tags.ItemTags;
 import net.minecraft.tags.TagKey;
 import net.minecraft.world.item.DyeColor;
@@ -35,85 +42,88 @@ import net.minecraft.world.item.crafting.*;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Optional;
+import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.function.UnaryOperator;
+import java.util.stream.Stream;
 
 public final class FLCraftingRecipes {
     private FLCraftingRecipes() {}
 
     public static final DeferredRegister<RecipeSerializer<?>> REG = DeferredRegister.create(FairyLights.ID, Registries.RECIPE_SERIALIZER);
 
-    public static final RegistrySupplier<RecipeSerializer<GenericRecipe>> HANGING_LIGHTS = REG.register("crafting_special_hanging_lights", () -> new SimpleCraftingRecipeSerializer<>(FLCraftingRecipes::createHangingLights));
+    public static final RegistrySupplier<RecipeSerializer<GenericRecipe>> HANGING_LIGHTS = REG.register("crafting_special_hanging_lights", FLCraftingRecipes::createHangingLights);
 
-    public static final RegistrySupplier<RecipeSerializer<GenericRecipe>> HANGING_LIGHTS_AUGMENTATION = REG.register("crafting_special_hanging_lights_augmentation", () -> new SimpleCraftingRecipeSerializer<>(FLCraftingRecipes::createHangingLightsAugmentation));
+    public static final RegistrySupplier<RecipeSerializer<GenericRecipe>> HANGING_LIGHTS_AUGMENTATION = REG.register("crafting_special_hanging_lights_augmentation", FLCraftingRecipes::createHangingLightsAugmentation);
 
-    public static final RegistrySupplier<RecipeSerializer<GenericRecipe>> TINSEL_GARLAND = REG.register("crafting_special_tinsel_garland", () -> new SimpleCraftingRecipeSerializer<>(FLCraftingRecipes::createTinselGarland));
+    public static final RegistrySupplier<RecipeSerializer<GenericRecipe>> TINSEL_GARLAND = REG.register("crafting_special_tinsel_garland", FLCraftingRecipes::createTinselGarland);
 
-    public static final RegistrySupplier<RecipeSerializer<GenericRecipe>> PENNANT_BUNTING = REG.register("crafting_special_pennant_bunting", () -> new SimpleCraftingRecipeSerializer<>(FLCraftingRecipes::createPennantBunting));
+    public static final RegistrySupplier<RecipeSerializer<GenericRecipe>> PENNANT_BUNTING = REG.register("crafting_special_pennant_bunting", FLCraftingRecipes::createPennantBunting);
 
-    public static final RegistrySupplier<RecipeSerializer<GenericRecipe>> PENNANT_BUNTING_AUGMENTATION = REG.register("crafting_special_pennant_bunting_augmentation", () -> new SimpleCraftingRecipeSerializer<>(FLCraftingRecipes::createPennantBuntingAugmentation));
+    public static final RegistrySupplier<RecipeSerializer<GenericRecipe>> PENNANT_BUNTING_AUGMENTATION = REG.register("crafting_special_pennant_bunting_augmentation", FLCraftingRecipes::createPennantBuntingAugmentation);
 
-    public static final RegistrySupplier<RecipeSerializer<GenericRecipe>> TRIANGLE_PENNANT = REG.register("crafting_special_triangle_pennant", () -> new SimpleCraftingRecipeSerializer<>(FLCraftingRecipes::createTrianglePennant));
+    public static final RegistrySupplier<RecipeSerializer<GenericRecipe>> TRIANGLE_PENNANT = REG.register("crafting_special_triangle_pennant", FLCraftingRecipes::createTrianglePennant);
 
-    public static final RegistrySupplier<RecipeSerializer<GenericRecipe>> SPEARHEAD_PENNANT = REG.register("crafting_special_spearhead_pennant", () -> new SimpleCraftingRecipeSerializer<>(FLCraftingRecipes::createSpearheadPennant));
+    public static final RegistrySupplier<RecipeSerializer<GenericRecipe>> SPEARHEAD_PENNANT = REG.register("crafting_special_spearhead_pennant", FLCraftingRecipes::createSpearheadPennant);
 
-    public static final RegistrySupplier<RecipeSerializer<GenericRecipe>> SWALLOWTAIL_PENNANT = REG.register("crafting_special_swallowtail_pennant", () -> new SimpleCraftingRecipeSerializer<>(FLCraftingRecipes::createSwallowtailPennant));
+    public static final RegistrySupplier<RecipeSerializer<GenericRecipe>> SWALLOWTAIL_PENNANT = REG.register("crafting_special_swallowtail_pennant", FLCraftingRecipes::createSwallowtailPennant);
 
-    public static final RegistrySupplier<RecipeSerializer<GenericRecipe>> SQUARE_PENNANT = REG.register("crafting_special_square_pennant", () -> new SimpleCraftingRecipeSerializer<>(FLCraftingRecipes::createSquarePennant));
+    public static final RegistrySupplier<RecipeSerializer<GenericRecipe>> SQUARE_PENNANT = REG.register("crafting_special_square_pennant", FLCraftingRecipes::createSquarePennant);
 
-    public static final RegistrySupplier<RecipeSerializer<GenericRecipe>> FAIRY_LIGHT = REG.register("crafting_special_fairy_light", () -> new SimpleCraftingRecipeSerializer<>(FLCraftingRecipes::createFairyLight));
+    public static final RegistrySupplier<RecipeSerializer<GenericRecipe>> FAIRY_LIGHT = REG.register("crafting_special_fairy_light", FLCraftingRecipes::createFairyLight);
 
-    public static final RegistrySupplier<RecipeSerializer<GenericRecipe>> PAPER_LANTERN = REG.register("crafting_special_paper_lantern", () -> new SimpleCraftingRecipeSerializer<>(FLCraftingRecipes::createPaperLantern));
+    public static final RegistrySupplier<RecipeSerializer<GenericRecipe>> PAPER_LANTERN = REG.register("crafting_special_paper_lantern", FLCraftingRecipes::createPaperLantern);
 
-    public static final RegistrySupplier<RecipeSerializer<GenericRecipe>> ORB_LANTERN = REG.register("crafting_special_orb_lantern", () -> new SimpleCraftingRecipeSerializer<>(FLCraftingRecipes::createOrbLantern));
+    public static final RegistrySupplier<RecipeSerializer<GenericRecipe>> ORB_LANTERN = REG.register("crafting_special_orb_lantern", FLCraftingRecipes::createOrbLantern);
 
-    public static final RegistrySupplier<RecipeSerializer<GenericRecipe>> FLOWER_LIGHT = REG.register("crafting_special_flower_light", () -> new SimpleCraftingRecipeSerializer<>(FLCraftingRecipes::createFlowerLight));
+    public static final RegistrySupplier<RecipeSerializer<GenericRecipe>> FLOWER_LIGHT = REG.register("crafting_special_flower_light", FLCraftingRecipes::createFlowerLight);
 
-    public static final RegistrySupplier<RecipeSerializer<GenericRecipe>> CANDLE_LANTERN_LIGHT = REG.register("crafting_special_candle_lantern_light", () -> new SimpleCraftingRecipeSerializer<>(FLCraftingRecipes::createCandleLanternLight));
+    public static final RegistrySupplier<RecipeSerializer<GenericRecipe>> CANDLE_LANTERN_LIGHT = REG.register("crafting_special_candle_lantern_light", FLCraftingRecipes::createCandleLanternLight);
 
-    public static final RegistrySupplier<RecipeSerializer<GenericRecipe>> OIL_LANTERN_LIGHT = REG.register("crafting_special_oil_lantern_light", () -> new SimpleCraftingRecipeSerializer<>(FLCraftingRecipes::createOilLanternLight));
+    public static final RegistrySupplier<RecipeSerializer<GenericRecipe>> OIL_LANTERN_LIGHT = REG.register("crafting_special_oil_lantern_light", FLCraftingRecipes::createOilLanternLight);
 
-    public static final RegistrySupplier<RecipeSerializer<GenericRecipe>> JACK_O_LANTERN = REG.register("crafting_special_jack_o_lantern", () -> new SimpleCraftingRecipeSerializer<>(FLCraftingRecipes::createJackOLantern));
+    public static final RegistrySupplier<RecipeSerializer<GenericRecipe>> JACK_O_LANTERN = REG.register("crafting_special_jack_o_lantern", FLCraftingRecipes::createJackOLantern);
 
-    public static final RegistrySupplier<RecipeSerializer<GenericRecipe>> SKULL_LIGHT = REG.register("crafting_special_skull_light", () -> new SimpleCraftingRecipeSerializer<>(FLCraftingRecipes::createSkullLight));
+    public static final RegistrySupplier<RecipeSerializer<GenericRecipe>> SKULL_LIGHT = REG.register("crafting_special_skull_light", FLCraftingRecipes::createSkullLight);
 
-    public static final RegistrySupplier<RecipeSerializer<GenericRecipe>> GHOST_LIGHT = REG.register("crafting_special_ghost_light", () -> new SimpleCraftingRecipeSerializer<>(FLCraftingRecipes::createGhostLight));
+    public static final RegistrySupplier<RecipeSerializer<GenericRecipe>> GHOST_LIGHT = REG.register("crafting_special_ghost_light", FLCraftingRecipes::createGhostLight);
 
-    public static final RegistrySupplier<RecipeSerializer<GenericRecipe>> SPIDER_LIGHT = REG.register("crafting_special_spider_light", () -> new SimpleCraftingRecipeSerializer<>(FLCraftingRecipes::createSpiderLight));
+    public static final RegistrySupplier<RecipeSerializer<GenericRecipe>> SPIDER_LIGHT = REG.register("crafting_special_spider_light", FLCraftingRecipes::createSpiderLight);
 
-    public static final RegistrySupplier<RecipeSerializer<GenericRecipe>> WITCH_LIGHT = REG.register("crafting_special_witch_light", () -> new SimpleCraftingRecipeSerializer<>(FLCraftingRecipes::createWitchLight));
+    public static final RegistrySupplier<RecipeSerializer<GenericRecipe>> WITCH_LIGHT = REG.register("crafting_special_witch_light", FLCraftingRecipes::createWitchLight);
 
-    public static final RegistrySupplier<RecipeSerializer<GenericRecipe>> SNOWFLAKE_LIGHT = REG.register("crafting_special_snowflake_light", () -> new SimpleCraftingRecipeSerializer<>(FLCraftingRecipes::createSnowflakeLight));
+    public static final RegistrySupplier<RecipeSerializer<GenericRecipe>> SNOWFLAKE_LIGHT = REG.register("crafting_special_snowflake_light", FLCraftingRecipes::createSnowflakeLight);
 
-    public static final RegistrySupplier<RecipeSerializer<GenericRecipe>> HEART_LIGHT = REG.register("crafting_special_heart_light", () -> new SimpleCraftingRecipeSerializer<>(FLCraftingRecipes::createHeartLight));
+    public static final RegistrySupplier<RecipeSerializer<GenericRecipe>> HEART_LIGHT = REG.register("crafting_special_heart_light", FLCraftingRecipes::createHeartLight);
 
-    public static final RegistrySupplier<RecipeSerializer<GenericRecipe>> MOON_LIGHT = REG.register("crafting_special_moon_light", () -> new SimpleCraftingRecipeSerializer<>(FLCraftingRecipes::createMoonLight));
+    public static final RegistrySupplier<RecipeSerializer<GenericRecipe>> MOON_LIGHT = REG.register("crafting_special_moon_light", FLCraftingRecipes::createMoonLight);
 
-    public static final RegistrySupplier<RecipeSerializer<GenericRecipe>> STAR_LIGHT = REG.register("crafting_special_star_light", () -> new SimpleCraftingRecipeSerializer<>(FLCraftingRecipes::createStarLight));
+    public static final RegistrySupplier<RecipeSerializer<GenericRecipe>> STAR_LIGHT = REG.register("crafting_special_star_light", FLCraftingRecipes::createStarLight);
 
-    public static final RegistrySupplier<RecipeSerializer<GenericRecipe>> ICICLE_LIGHTS = REG.register("crafting_special_icicle_lights", () -> new SimpleCraftingRecipeSerializer<>(FLCraftingRecipes::createIcicleLights));
+    public static final RegistrySupplier<RecipeSerializer<GenericRecipe>> ICICLE_LIGHTS = REG.register("crafting_special_icicle_lights", FLCraftingRecipes::createIcicleLights);
 
-    public static final RegistrySupplier<RecipeSerializer<GenericRecipe>> METEOR_LIGHT = REG.register("crafting_special_meteor_light", () -> new SimpleCraftingRecipeSerializer<>(FLCraftingRecipes::createMeteorLight));
+    public static final RegistrySupplier<RecipeSerializer<GenericRecipe>> METEOR_LIGHT = REG.register("crafting_special_meteor_light", FLCraftingRecipes::createMeteorLight);
 
-    public static final RegistrySupplier<RecipeSerializer<GenericRecipe>> LIGHT_TWINKLE = REG.register("crafting_special_light_twinkle", () -> new SimpleCraftingRecipeSerializer<>(FLCraftingRecipes::createLightTwinkle));
+    public static final RegistrySupplier<RecipeSerializer<GenericRecipe>> LIGHT_TWINKLE = REG.register("crafting_special_light_twinkle", FLCraftingRecipes::createLightTwinkle);
 
-    public static final RegistrySupplier<RecipeSerializer<GenericRecipe>> COLOR_CHANGING_LIGHT = REG.register("crafting_special_color_changing_light", () -> new SimpleCraftingRecipeSerializer<>(FLCraftingRecipes::createColorChangingLight));
+    public static final RegistrySupplier<RecipeSerializer<GenericRecipe>> COLOR_CHANGING_LIGHT = REG.register("crafting_special_color_changing_light", FLCraftingRecipes::createColorChangingLight);
 
-    public static final RegistrySupplier<RecipeSerializer<GenericRecipe>> EDIT_COLOR = REG.register("crafting_special_edit_color", () -> new SimpleCraftingRecipeSerializer<>(FLCraftingRecipes::createDyeColor));
+    public static final RegistrySupplier<RecipeSerializer<GenericRecipe>> EDIT_COLOR = REG.register("crafting_special_edit_color", FLCraftingRecipes::createDyeColor);
 
-    public static final RegistrySupplier<? extends RecipeSerializer<CustomRecipe>> COPY_COLOR = REG.register("crafting_special_copy_color", () -> new SimpleCraftingRecipeSerializer<>(CopyColorRecipe::new));
+    public static final RegistrySupplier<RecipeSerializer<CopyColorRecipe>> COPY_COLOR = REG.register("crafting_special_copy_color", () -> new RecipeSerializer<>(CopyColorRecipe.CODEC, CopyColorRecipe.STREAM_CODEC));
 
-    public static final TagKey<Item> LIGHTS = TagKey.create(Registries.ITEM, ResourceLocation.parse(FairyLights.ID + ":lights"));
+    public static final TagKey<Item> LIGHTS = TagKey.create(Registries.ITEM, FairyLights.id("lights"));
 
-    public static final TagKey<Item> TWINKLING_LIGHTS = TagKey.create(Registries.ITEM, ResourceLocation.parse(FairyLights.ID + ":twinkling_lights"));
+    public static final TagKey<Item> TWINKLING_LIGHTS = TagKey.create(Registries.ITEM, FairyLights.id("twinkling_lights"));
 
-    public static final TagKey<Item> PENNANTS = TagKey.create(Registries.ITEM, ResourceLocation.parse(FairyLights.ID + ":pennants"));
+    public static final TagKey<Item> PENNANTS = TagKey.create(Registries.ITEM, FairyLights.id("pennants"));
 
-    public static final TagKey<Item> DYEABLE = TagKey.create(Registries.ITEM, ResourceLocation.parse(FairyLights.ID + ":dyeable"));
+    public static final TagKey<Item> DYEABLE = TagKey.create(Registries.ITEM, FairyLights.id("dyeable"));
 
-    public static final TagKey<Item> DYEABLE_LIGHTS = TagKey.create(Registries.ITEM, ResourceLocation.parse(FairyLights.ID + ":dyeable_lights"));
+    public static final TagKey<Item> DYEABLE_LIGHTS = TagKey.create(Registries.ITEM, FairyLights.id("dyeable_lights"));
 
-    public static final RegularIngredient DYE_SUBTYPE_INGREDIENT = new BasicRegularIngredient(Ingredient.of(Tags.Items.DYES)) {
+    public static final Function<HolderLookup.Provider, RegularIngredient> DYE_SUBTYPE_INGREDIENT = registries -> new BasicRegularIngredient(Ingredient.of(registries.getOrThrow(ConventionalItemTags.DYES))) {
         @Override
         public ImmutableList<ImmutableList<ItemStack>> getInput(final ItemStack output) {
             return DyeableItem.getDyeColor(output).map(dye -> ImmutableList.of(OreDictUtils.getDyes(dye))).orElse(ImmutableList.of());
@@ -130,11 +140,11 @@ public final class FLCraftingRecipes {
         }
     };
 
-    private static GenericRecipe createDyeColor(final CraftingBookCategory craftingBookCategory) {
-        return new GenericRecipeBuilder(EDIT_COLOR)
+    private static RecipeSerializer<GenericRecipe> createDyeColor() {
+        return createSerializer(new GenericRecipeBuilder(EDIT_COLOR)
             .withShape("I")
             .withIngredient('I', DYEABLE).withOutput('I')
-            .withAuxiliaryIngredient(new BasicAuxiliaryIngredient<Blender>(Ingredient.of(Tags.Items.DYES), true, 8) {
+            .withDirectAuxiliaryIngredient(registries -> new BasicAuxiliaryIngredient<Blender>(Ingredient.of(registries.getOrThrow(ConventionalItemTags.DYES)), true, 8) {
                 @Override
                 public Blender accumulator() {
                     return new Blender();
@@ -150,15 +160,14 @@ public final class FLCraftingRecipes {
                     components.set(FLComponents.COLOR, data.blend());
                     return false;
                 }
-            })
-            .build();
+            }));
     }
 
-    private static GenericRecipe createLightTwinkle(final CraftingBookCategory craftingBookCategory) {
-        return new GenericRecipeBuilder(LIGHT_TWINKLE)
+    private static RecipeSerializer<GenericRecipe> createLightTwinkle() {
+        return createSerializer(new GenericRecipeBuilder(LIGHT_TWINKLE)
             .withShape("L")
             .withIngredient('L', TWINKLING_LIGHTS).withOutput('L')
-            .withAuxiliaryIngredient(new InertBasicAuxiliaryIngredient(Ingredient.of(Tags.Items.DUSTS_GLOWSTONE), true, 1) {
+            .withDirectAuxiliaryIngredient(registries -> new InertBasicAuxiliaryIngredient(Ingredient.of(registries.getOrThrow(ConventionalItemTags.GLOWSTONE_DUSTS)), true, 1) {
                 @Override
                 public ImmutableList<ImmutableList<ItemStack>> getInput(final ItemStack output) {
                     return output.has(FLComponents.TWINKLES) && output.get(FLComponents.TWINKLES) ? super.getInput(output) : ImmutableList.of();
@@ -179,16 +188,15 @@ public final class FLCraftingRecipes {
                     super.addTooltip(tooltip);
                     tooltip.add(Utils.formatRecipeTooltip("recipe.fairylights.twinkling_lights.glowstone"));
                 }
-            })
-            .build();
+            }));
     }
 
-    private static GenericRecipe createColorChangingLight(final CraftingBookCategory craftingBookCategory) {
-        return new GenericRecipeBuilder(COLOR_CHANGING_LIGHT)
+    private static RecipeSerializer<GenericRecipe> createColorChangingLight() {
+        return createSerializer(new GenericRecipeBuilder(COLOR_CHANGING_LIGHT)
             .withShape("IG")
             .withIngredient('I', DYEABLE_LIGHTS).withOutput('I')
-            .withIngredient('G', Tags.Items.NUGGETS_GOLD)
-            .withAuxiliaryIngredient(new BasicAuxiliaryIngredient<ListTag>(Ingredient.of(Tags.Items.DYES), true, 8) {
+            .withIngredient('G', ConventionalItemTags.GOLD_NUGGETS)
+            .withDirectAuxiliaryIngredient(registries -> new BasicAuxiliaryIngredient<ListTag>(Ingredient.of(registries.getOrThrow(ConventionalItemTags.DYES)), true, 8) {
                 @Override
                 public ListTag accumulator() {
                     return new ListTag();
@@ -206,21 +214,20 @@ public final class FLCraftingRecipes {
                             data.add(0, IntTag.valueOf(nbt.get(FLComponents.COLOR)));
                             nbt.remove(FLComponents.COLOR);
                         }
-                        nbt.set(FLComponents.COLORS, data.stream().map(s -> ((IntTag) s).getAsInt()).toList());
+                        nbt.set(FLComponents.COLORS, data.stream().map(s -> ((IntTag) s).value()).toList());
                     }
                     return false;
                 }
-            })
-            .build();
+            }));
     }
 
-    private static GenericRecipe createHangingLights(CraftingBookCategory craftingBookCategory) {
-        return new GenericRecipeBuilder(HANGING_LIGHTS, FLItems.HANGING_LIGHTS.get())
+    private static RecipeSerializer<GenericRecipe> createHangingLights() {
+        return createSerializer(new GenericRecipeBuilder(HANGING_LIGHTS, FLItems.HANGING_LIGHTS.get())
             .withShape("I-I")
             .withIngredient('I', ConventionalItemTags.IRON_INGOTS)
             .withIngredient('-', ConventionalItemTags.STRINGS)
-            .withAuxiliaryIngredient(new LightIngredient(true))
-            .withAuxiliaryIngredient(new InertBasicAuxiliaryIngredient(Ingredient.of(Tags.Items.DYES_WHITE), false, 1) {
+            .withDirectAuxiliaryIngredient(registries -> new LightIngredient(registries, true))
+            .withDirectAuxiliaryIngredient(registries -> new InertBasicAuxiliaryIngredient(Ingredient.of(registries.getOrThrow(ConventionalItemTags.WHITE_DYES)), false, 1) {
                 @Override
                 public ImmutableList<ImmutableList<ItemStack>> getInput(final ItemStack output) {
                     return output.has(FLComponents.STRING_TYPE) && output.get(FLComponents.STRING_TYPE) == StringTypes.WHITE_STRING.get() ? super.getInput(output) : ImmutableList.of();
@@ -241,8 +248,85 @@ public final class FLCraftingRecipes {
                     super.addTooltip(tooltip);
                     tooltip.add(Utils.formatRecipeTooltip("recipe.fairylights.hangingLights.string"));
                 }
-            })
-            .build();
+            }));
+    }
+
+    private static HolderLookup.Provider fromRegistryOps(RegistryOps<?> ops) {
+        return new HolderLookup.Provider() {
+            @Override
+            public Stream<ResourceKey<? extends Registry<?>>> listRegistryKeys() {
+                return Stream.empty();
+            }
+
+            @Override
+            public <T> Optional<? extends HolderLookup.RegistryLookup<T>> lookup(ResourceKey<? extends Registry<? extends T>> key) {
+                return ops.getter(key)
+                    .map(registry -> new HolderLookup.RegistryLookup<T>() {
+                        // we don't need *everything*
+                        @Override
+                        public ResourceKey<? extends Registry<? extends T>> key() {
+                            return key;
+                        }
+
+                        @Override
+                        public Lifecycle registryLifecycle() {
+                            return Lifecycle.stable();
+                        }
+
+                        @Override
+                        public Stream<Holder.Reference<T>> listElements() {
+                            return Stream.empty();
+                        }
+
+                        @Override
+                        public Stream<HolderSet.Named<T>> listTags() {
+                            return Stream.empty();
+                        }
+
+                        @Override
+                        public Optional<Holder.Reference<T>> get(ResourceKey<T> id) {
+                            return registry.get(id);
+                        }
+
+                        @Override
+                        public Optional<HolderSet.Named<T>> get(TagKey<T> id) {
+                            return registry.get(id);
+                        }
+                    });
+            }
+        };
+    }
+
+    private static RecipeSerializer<GenericRecipe> createSerializer(GenericRecipeBuilder builder) {
+        return new RecipeSerializer<>(new MapCodec<>() {
+            @Override
+            public <T> Stream<T> keys(DynamicOps<T> ops) {
+                return Stream.empty();
+            }
+
+            @Override
+            public <T> DataResult<GenericRecipe> decode(DynamicOps<T> ops, MapLike<T> input) {
+                if (ops instanceof RegistryOps<T> registryOps) {
+                    return DataResult.success(builder.build(fromRegistryOps(registryOps)));
+                }
+
+                return DataResult.error(() -> "Was not decoded with registries!");
+            }
+
+            @Override
+            public <T> RecordBuilder<T> encode(GenericRecipe input, DynamicOps<T> ops, RecordBuilder<T> prefix) {
+                return prefix;
+            }
+        }, new StreamCodec<>() {
+            @Override
+            public GenericRecipe decode(RegistryFriendlyByteBuf input) {
+                return builder.build(input.registryAccess());
+            }
+
+            @Override
+            public void encode(RegistryFriendlyByteBuf output, GenericRecipe value) {
+            }
+        });
     }
 
     /*
@@ -250,14 +334,14 @@ public final class FLCraftingRecipes {
      *  different recipe layouts the the input ingredients can be generated for so I could show applying a
      *  new light pattern as well.
      */
-    private static GenericRecipe createHangingLightsAugmentation(final CraftingBookCategory craftingBookCategory) {
-        return new GenericRecipeBuilder(HANGING_LIGHTS_AUGMENTATION, FLItems.HANGING_LIGHTS.get())
+    private static RecipeSerializer<GenericRecipe> createHangingLightsAugmentation() {
+        return createSerializer(new GenericRecipeBuilder(HANGING_LIGHTS_AUGMENTATION, FLItems.HANGING_LIGHTS.get())
             .withShape("F")
             .withIngredient('F', new BasicRegularIngredient(Ingredient.of(FLItems.HANGING_LIGHTS.get())) {
                 @Override
                 public ImmutableList<ItemStack> getInputs() {
-                    return Arrays.stream(this.ingredient.getItems())
-                        .map(ItemStack::copy)
+                    return this.ingredient.items()
+                        .map(ItemStack::new)
                         .flatMap(stack -> {
                             return makeHangingLightsExamples(stack).stream();
                         }).collect(ImmutableList.toImmutableList());
@@ -280,7 +364,7 @@ public final class FLCraftingRecipes {
                     }
                 }
             })
-            .withAuxiliaryIngredient(new LightIngredient(true) {
+            .withDirectAuxiliaryIngredient(registries -> new LightIngredient(registries, true) {
                 @Override
                 public ImmutableList<ItemStack> getInputs() {
                     return ImmutableList.of();
@@ -290,8 +374,7 @@ public final class FLCraftingRecipes {
                 public ImmutableList<ImmutableList<ItemStack>> getInput(final ItemStack output) {
                     return ImmutableList.of();
                 }
-            })
-            .build();
+            }));
     }
 
     private static ImmutableList<ItemStack> makeHangingLightsExamples(final ItemStack stack) {
@@ -315,33 +398,31 @@ public final class FLCraftingRecipes {
         return stack;
     }
 
-    private static GenericRecipe createTinselGarland(final CraftingBookCategory craftingBookCategory) {
-        return new GenericRecipeBuilder(TINSEL_GARLAND, FLItems.TINSEL.get())
+    private static RecipeSerializer<GenericRecipe> createTinselGarland() {
+        return createSerializer(new GenericRecipeBuilder(TINSEL_GARLAND, FLItems.TINSEL.get())
             .withShape(" P ", "I-I", " D ")
             .withIngredient('P', Items.PAPER)
             .withIngredient('I', ConventionalItemTags.IRON_INGOTS)
             .withIngredient('-', ConventionalItemTags.STRINGS)
-            .withIngredient('D', DYE_SUBTYPE_INGREDIENT)
-            .build();
+            .withIngredient('D', DYE_SUBTYPE_INGREDIENT));
     }
 
-    private static GenericRecipe createPennantBunting(final CraftingBookCategory craftingBookCategory) {
-        return new GenericRecipeBuilder(PENNANT_BUNTING, FLItems.PENNANT_BUNTING.get())
+    private static RecipeSerializer<GenericRecipe> createPennantBunting() {
+        return createSerializer(new GenericRecipeBuilder(PENNANT_BUNTING, FLItems.PENNANT_BUNTING.get())
             .withShape("I-I")
             .withIngredient('I', ConventionalItemTags.IRON_INGOTS)
             .withIngredient('-', ConventionalItemTags.STRINGS)
-            .withAuxiliaryIngredient(new PennantIngredient())
-            .build();
+            .withDirectAuxiliaryIngredient(PennantIngredient::new));
     }
 
-    private static GenericRecipe createPennantBuntingAugmentation(final CraftingBookCategory craftingBookCategory) {
-        return new GenericRecipeBuilder(PENNANT_BUNTING_AUGMENTATION, FLItems.PENNANT_BUNTING.get())
+    private static RecipeSerializer<GenericRecipe> createPennantBuntingAugmentation() {
+        return createSerializer(new GenericRecipeBuilder(PENNANT_BUNTING_AUGMENTATION, FLItems.PENNANT_BUNTING.get())
             .withShape("B")
             .withIngredient('B', new BasicRegularIngredient(Ingredient.of(FLItems.PENNANT_BUNTING.get())) {
                 @Override
                 public ImmutableList<ItemStack> getInputs() {
-                    return Arrays.stream(this.ingredient.getItems())
-                        .map(ItemStack::copy)
+                    return this.ingredient.items()
+                        .map(ItemStack::new)
                         .flatMap(stack -> {
                             return makePennantExamples(stack).stream();
                         }).collect(ImmutableList.toImmutableList());
@@ -363,8 +444,7 @@ public final class FLCraftingRecipes {
                     }
                 }
             })
-            .withAuxiliaryIngredient(new PennantIngredient())
-            .build();
+            .withDirectAuxiliaryIngredient(PennantIngredient::new));
     }
 
     private static ImmutableList<ItemStack> makePennantExamples(final ItemStack stack) {
@@ -385,58 +465,57 @@ public final class FLCraftingRecipes {
             pennants.add(pennant);
         }
         stack.set(FLComponents.PATTERN, pennants);
-        stack.set(FLComponents.STYLED_STRING, new StyledString());
+        stack.set(FLComponents.STYLED_STRING, Component.empty());
         return stack;
     }
 
-    private static GenericRecipe createPennant(final Supplier<RecipeSerializer<GenericRecipe>> serializer, final Item item, final String pattern) {
-        return new GenericRecipeBuilder(serializer, item)
+    private static RecipeSerializer<GenericRecipe> createPennant(final Supplier<RecipeSerializer<GenericRecipe>> serializer, final Item item, final String pattern) {
+        return createSerializer(new GenericRecipeBuilder(serializer, item)
             .withShape("- -", "PDP", pattern)
             .withIngredient('P', Items.PAPER)
             .withIngredient('-', ConventionalItemTags.STRINGS)
-            .withIngredient('D', DYE_SUBTYPE_INGREDIENT)
-            .build();
+            .withIngredient('D', DYE_SUBTYPE_INGREDIENT));
     }
 
-    private static GenericRecipe createTrianglePennant(final CraftingBookCategory craftingBookCategory) {
+    private static RecipeSerializer<GenericRecipe> createTrianglePennant() {
         return createPennant(TRIANGLE_PENNANT, FLItems.TRIANGLE_PENNANT.get(), " P ");
     }
 
-    private static GenericRecipe createSpearheadPennant(final CraftingBookCategory craftingBookCategory) {
+    private static RecipeSerializer<GenericRecipe> createSpearheadPennant() {
         return createPennant(SPEARHEAD_PENNANT, FLItems.SPEARHEAD_PENNANT.get(), " PP");
     }
 
-    private static GenericRecipe createSwallowtailPennant(final CraftingBookCategory craftingBookCategory) {
+    private static RecipeSerializer<GenericRecipe> createSwallowtailPennant() {
         return createPennant(SWALLOWTAIL_PENNANT, FLItems.SWALLOWTAIL_PENNANT.get(), "P P");
     }
 
-    private static GenericRecipe createSquarePennant(final CraftingBookCategory craftingBookCategory) {
+    private static RecipeSerializer<GenericRecipe> createSquarePennant() {
         return createPennant(SQUARE_PENNANT, FLItems.SQUARE_PENNANT.get(), "PPP");
     }
 
-    private static GenericRecipe createFairyLight(final CraftingBookCategory craftingBookCategory) {
+    private static RecipeSerializer<GenericRecipe> createFairyLight() {
         return createLight(FAIRY_LIGHT, FLItems.FAIRY_LIGHT, b -> b
             .withShape(" I ", "IDI", " G ")
-            .withIngredient('G', Tags.Items.GLASS_PANES_COLORLESS)
+            .withIngredient('G', ConventionalItemTags.GLASS_PANES_COLORLESS)
         );
     }
 
-    private static GenericRecipe createPaperLantern(final CraftingBookCategory craftingBookCategory) {
+    private static RecipeSerializer<GenericRecipe> createPaperLantern() {
         return createLight(PAPER_LANTERN, FLItems.PAPER_LANTERN, b -> b
             .withShape(" I ", "PDP", "PPP")
             .withIngredient('P', Items.PAPER)
         );
     }
 
-    private static GenericRecipe createOrbLantern(final CraftingBookCategory craftingBookCategory) {
+    private static RecipeSerializer<GenericRecipe> createOrbLantern() {
         return createLight(ORB_LANTERN, FLItems.ORB_LANTERN, b -> b
             .withShape(" I ", "SDS", " W ")
             .withIngredient('S', ConventionalItemTags.STRINGS)
-            .withIngredient('W', Items.WHITE_WOOL)
+            .withIngredient('W', Items.WOOL.white())
         );
     }
 
-    private static GenericRecipe createFlowerLight(final CraftingBookCategory craftingBookCategory) {
+    private static RecipeSerializer<GenericRecipe> createFlowerLight() {
         return createLight(FLOWER_LIGHT, FLItems.FLOWER_LIGHT, b -> b
             .withShape(" I ", "RDB", " Y ")
             .withIngredient('R', Items.POPPY)
@@ -445,22 +524,22 @@ public final class FLCraftingRecipes {
         );
     }
 
-    private static GenericRecipe createCandleLanternLight(final CraftingBookCategory craftingBookCategory) {
+    private static RecipeSerializer<GenericRecipe> createCandleLanternLight() {
         return createLight(CANDLE_LANTERN_LIGHT, FLItems.CANDLE_LANTERN_LIGHT, b -> b
             .withShape(" I ", "GDG", "IGI")
-            .withIngredient('G', Tags.Items.NUGGETS_GOLD)
+            .withIngredient('G', ConventionalItemTags.GOLD_NUGGETS)
         );
     }
 
-    private static GenericRecipe createOilLanternLight(final CraftingBookCategory craftingBookCategory) {
+    private static RecipeSerializer<GenericRecipe> createOilLanternLight() {
         return createLight(OIL_LANTERN_LIGHT, FLItems.OIL_LANTERN_LIGHT, b -> b
             .withShape(" I ", "SDS", "IGI")
             .withIngredient('S', Items.STICK)
-            .withIngredient('G', Tags.Items.GLASS_PANES_COLORLESS)
+            .withIngredient('G', ConventionalItemTags.GLASS_PANES_COLORLESS)
         );
     }
 
-    private static GenericRecipe createJackOLantern(final CraftingBookCategory craftingBookCategory) {
+    private static RecipeSerializer<GenericRecipe> createJackOLantern() {
         return createLight(JACK_O_LANTERN, FLItems.JACK_O_LANTERN, b -> b
             .withShape(" I ", "SDS", "GPG")
             .withIngredient('S', ItemTags.WOODEN_SLABS)
@@ -469,22 +548,22 @@ public final class FLCraftingRecipes {
         );
     }
 
-    private static GenericRecipe createSkullLight(final CraftingBookCategory craftingBookCategory) {
+    private static RecipeSerializer<GenericRecipe> createSkullLight() {
         return createLight(SKULL_LIGHT, FLItems.SKULL_LIGHT, b -> b
             .withShape(" I ", "IDI", " B ")
-            .withIngredient('B', Tags.Items.BONES)
+            .withIngredient('B', ConventionalItemTags.BONES)
         );
     }
 
-    private static GenericRecipe createGhostLight(final CraftingBookCategory craftingBookCategory) {
+    private static RecipeSerializer<GenericRecipe> createGhostLight() {
         return createLight(GHOST_LIGHT, FLItems.GHOST_LIGHT, b -> b
             .withShape(" I ", "PDP", "IGI")
             .withIngredient('P', Items.PAPER)
-            .withIngredient('G', Items.WHITE_STAINED_GLASS_PANE)
+            .withIngredient('G', Items.STAINED_GLASS_PANE.white())
         );
     }
 
-    private static GenericRecipe createSpiderLight(final CraftingBookCategory craftingBookCategory) {
+    private static RecipeSerializer<GenericRecipe> createSpiderLight() {
         return createLight(SPIDER_LIGHT, FLItems.SPIDER_LIGHT, b -> b
             .withShape(" I ", "WDW", "SES")
             .withIngredient('W', Items.COBWEB)
@@ -493,7 +572,7 @@ public final class FLCraftingRecipes {
         );
     }
 
-    private static GenericRecipe createWitchLight(final CraftingBookCategory craftingBookCategory) {
+    private static RecipeSerializer<GenericRecipe> createWitchLight() {
         return createLight(WITCH_LIGHT, FLItems.WITCH_LIGHT, b -> b
             .withShape(" I ", "BDW", " S ")
             .withIngredient('B', Items.GLASS_BOTTLE)
@@ -502,65 +581,64 @@ public final class FLCraftingRecipes {
         );
     }
 
-    private static GenericRecipe createSnowflakeLight(final CraftingBookCategory craftingBookCategory) {
+    private static RecipeSerializer<GenericRecipe> createSnowflakeLight() {
         return createLight(SNOWFLAKE_LIGHT, FLItems.SNOWFLAKE_LIGHT, b -> b
             .withShape(" I ", "SDS", " G ")
             .withIngredient('S', Items.SNOWBALL)
-            .withIngredient('G', Items.WHITE_STAINED_GLASS_PANE)
+            .withIngredient('G', Items.STAINED_GLASS_PANE.white())
         );
     }
 
-    private static GenericRecipe createHeartLight(final CraftingBookCategory craftingBookCategory) {
+    private static RecipeSerializer<GenericRecipe> createHeartLight() {
         return createLight(HEART_LIGHT, FLItems.HEART_LIGHT, b -> b
             .withShape(" I ", "IDI", " G ")
-            .withIngredient('G', Items.RED_STAINED_GLASS_PANE)
+            .withIngredient('G', Items.STAINED_GLASS_PANE.red())
         );
     }
 
-    private static GenericRecipe createMoonLight(final CraftingBookCategory craftingBookCategory) {
+    private static RecipeSerializer<GenericRecipe> createMoonLight() {
         return createLight(MOON_LIGHT, FLItems.MOON_LIGHT, b -> b
             .withShape(" I ", "GDG", " C ")
-            .withIngredient('G', Items.WHITE_STAINED_GLASS_PANE)
+            .withIngredient('G', Items.STAINED_GLASS_PANE.white())
             .withIngredient('C', Items.CLOCK)
         );
     }
 
 
-    private static GenericRecipe createStarLight(final CraftingBookCategory craftingBookCategory) {
+    private static RecipeSerializer<GenericRecipe> createStarLight() {
         return createLight(STAR_LIGHT, FLItems.STAR_LIGHT, b -> b
             .withShape(" I ", "PDP", " G ")
-            .withIngredient('P', Items.WHITE_STAINED_GLASS_PANE)
-            .withIngredient('G', Tags.Items.NUGGETS_GOLD)
+            .withIngredient('P', Items.STAINED_GLASS_PANE.white())
+            .withIngredient('G', ConventionalItemTags.GOLD_NUGGETS)
         );
     }
 
-    private static GenericRecipe createIcicleLights(final CraftingBookCategory craftingBookCategory) {
+    private static RecipeSerializer<GenericRecipe> createIcicleLights() {
         return createLight(ICICLE_LIGHTS, FLItems.ICICLE_LIGHTS, b -> b
             .withShape(" I ", "GDG", " B ")
-            .withIngredient('G', Tags.Items.GLASS_PANES_COLORLESS)
+            .withIngredient('G', ConventionalItemTags.GLASS_PANES_COLORLESS)
             .withIngredient('B', Items.WATER_BUCKET)
         );
     }
 
-    private static GenericRecipe createMeteorLight(final CraftingBookCategory craftingBookCategory) {
+    private static RecipeSerializer<GenericRecipe> createMeteorLight() {
         return createLight(METEOR_LIGHT, FLItems.METEOR_LIGHT, b -> b
             .withShape(" I ", "GDG", "IPI")
-            .withIngredient('G', Tags.Items.DUSTS_GLOWSTONE)
+            .withIngredient('G', ConventionalItemTags.GLOWSTONE_DUSTS)
             .withIngredient('P', Items.PAPER)
         );
     }
 
-    private static GenericRecipe createLight(final Supplier<? extends RecipeSerializer<GenericRecipe>> serializer, final Supplier<? extends Item> variant, final UnaryOperator<GenericRecipeBuilder> recipe) {
-        return recipe.apply(new GenericRecipeBuilder(serializer))
+    private static RecipeSerializer<GenericRecipe> createLight(final Supplier<? extends RecipeSerializer<GenericRecipe>> serializer, final Supplier<? extends Item> variant, final UnaryOperator<GenericRecipeBuilder> recipe) {
+        return createSerializer(recipe.apply(new GenericRecipeBuilder(serializer))
             .withIngredient('I', ConventionalItemTags.IRON_INGOTS)
             .withIngredient('D', FLCraftingRecipes.DYE_SUBTYPE_INGREDIENT)
-            .withOutput(variant.get(), 4)
-            .build();
+            .withOutput(variant.get(), 4));
     }
 
     private static class LightIngredient extends BasicAuxiliaryIngredient<List<ItemStack>> {
-        private LightIngredient(final boolean isRequired) {
-            super(Ingredient.of(LIGHTS), isRequired, 8);
+        private LightIngredient(final HolderLookup.Provider registries, final boolean isRequired) {
+            super(Ingredient.of(registries.getOrThrow(LIGHTS)), isRequired, 8);
         }
 
         @Override
@@ -610,8 +688,8 @@ public final class FLCraftingRecipes {
     }
 
     private static class PennantIngredient extends BasicAuxiliaryIngredient<List<ItemStack>> {
-        private PennantIngredient() {
-            super(Ingredient.of(PENNANTS), true, 8);
+        private PennantIngredient(final HolderLookup.Provider registries) {
+            super(Ingredient.of(registries.getOrThrow(PENNANTS)), true, 8);
         }
 
         @Override
@@ -650,7 +728,7 @@ public final class FLCraftingRecipes {
         public boolean finish(final List<ItemStack> pattern, final ModifiableDataComponentMap nbt) {
             if (!pattern.isEmpty()) {
                 nbt.set(FLComponents.PATTERN, pattern);
-                nbt.set(FLComponents.STYLED_STRING, new StyledString());
+                nbt.set(FLComponents.STYLED_STRING, Component.empty());
             }
             return false;
         }

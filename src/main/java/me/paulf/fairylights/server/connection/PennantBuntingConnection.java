@@ -1,6 +1,5 @@
 package me.paulf.fairylights.server.connection;
 
-import io.github.fabricators_of_create.porting_lib.transfer.item.ItemHandlerHelper;
 import me.paulf.fairylights.client.gui.EditLetteredConnectionScreen;
 import me.paulf.fairylights.server.collision.Intersection;
 import me.paulf.fairylights.server.fastener.Fastener;
@@ -10,7 +9,7 @@ import me.paulf.fairylights.server.item.DyeableItem;
 import me.paulf.fairylights.server.item.components.FLComponents;
 import me.paulf.fairylights.server.sound.FLSounds;
 import me.paulf.fairylights.util.OreDictUtils;
-import me.paulf.fairylights.util.styledstring.StyledString;
+import me.paulf.fairylights.util.fabric.ItemHandlerHelper;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.minecraft.client.gui.screens.Screen;
@@ -19,11 +18,15 @@ import net.minecraft.core.component.DataComponentMap;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.Tag;
+import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.ComponentSerialization;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.storage.ValueInput;
+import net.minecraft.world.level.storage.ValueOutput;
 import net.minecraft.world.phys.Vec3;
 
 import java.util.ArrayList;
@@ -33,12 +36,12 @@ import java.util.UUID;
 public final class PennantBuntingConnection extends HangingFeatureConnection<Pennant> implements Lettered {
     private List<ItemStack> pattern;
 
-    private StyledString text;
+    private Component text;
 
     public PennantBuntingConnection(final ConnectionType<? extends PennantBuntingConnection> type, final Level world, final Fastener<?> fastener, final UUID uuid) {
         super(type, world, fastener, uuid);
         this.pattern = new ArrayList<>();
-        this.text = new StyledString();
+        this.text = Component.empty();
     }
 
     @Override
@@ -96,18 +99,18 @@ public final class PennantBuntingConnection extends HangingFeatureConnection<Pen
     }
 
     @Override
-    public boolean isSupportedText(final StyledString text) {
-        return text.length() <= this.features.length && Lettered.super.isSupportedText(text);
+    public boolean isSupportedText(final Component text) {
+        return text.getString().length() <= this.features.length && Lettered.super.isSupportedText(text);
     }
 
     @Override
-    public void setText(final StyledString text) {
+    public void setText(final Component text) {
         this.text = text;
         this.computeCatenary();
     }
 
     @Override
-    public StyledString getText() {
+    public Component getText() {
         return this.text;
     }
 
@@ -118,15 +121,13 @@ public final class PennantBuntingConnection extends HangingFeatureConnection<Pen
     }
 
     @Override
-    public CompoundTag serializeLogic(HolderLookup.Provider registries) {
-        final CompoundTag compound = super.serializeLogic(registries);
-        final ListTag patternList = new ListTag();
+    public void serializeLogic(ValueOutput output) {
+        super.serializeLogic(output);
+        final var patternList = output.list("pattern", ItemStack.OPTIONAL_CODEC);
         for (final ItemStack entry : this.pattern) {
-            patternList.add(entry.save(registries));
+            patternList.add(entry);
         }
-        compound.put("pattern", patternList);
-        compound.put("text", StyledString.serialize(this.text));
-        return compound;
+        output.store("text", ComponentSerialization.CODEC, this.text);
     }
 
     @Override
@@ -141,20 +142,20 @@ public final class PennantBuntingConnection extends HangingFeatureConnection<Pen
     }
 
     @Override
-    public void deserializeLogic(final CompoundTag compound, HolderLookup.Provider registries) {
-        super.deserializeLogic(compound, registries);
+    public void deserializeLogic(ValueInput input) {
+        super.deserializeLogic(input);
         this.pattern = new ArrayList<>();
-        final ListTag patternList = compound.getList("pattern", Tag.TAG_COMPOUND);
-        for (int i = 0; i < patternList.size(); i++) {
-            this.pattern.add(ItemStack.parseOptional(registries, patternList.getCompound(i)));
+        final var patternList = input.listOrEmpty("pattern", ItemStack.OPTIONAL_CODEC);
+        for (ItemStack stack : patternList) {
+            this.pattern.add(stack);
         }
-        this.text = StyledString.deserialize(compound.getCompound("text"));
+        this.text = input.read("text", ComponentSerialization.CODEC).orElse(null);
     }
 
     @Override
     public void deserializeLogic(DataComponentMap components) {
         super.deserializeLogic(components);
         this.pattern = components.getOrDefault(FLComponents.PATTERN, new ArrayList<>());
-        this.text = components.getOrDefault(FLComponents.STYLED_STRING, new StyledString());
+        this.text = components.getOrDefault(FLComponents.STYLED_STRING, Component.empty());
     }
 }

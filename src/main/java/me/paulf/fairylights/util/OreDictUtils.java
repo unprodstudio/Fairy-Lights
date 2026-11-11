@@ -4,6 +4,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMultimap;
 import net.fabricmc.fabric.api.tag.convention.v2.ConventionalItemTags;
 import net.minecraft.core.Holder;
+import net.minecraft.core.component.DataComponents;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.tags.TagKey;
 import net.minecraft.world.item.DyeColor;
@@ -16,18 +17,15 @@ public final class OreDictUtils {
 
     public static boolean isDye(final ItemStack stack) {
         if (!stack.isEmpty()) {
-            if (stack.getItem() instanceof DyeItem) {
-                return true;
-            }
-            return stack.is(ConventionalItemTags.DYES);
+            return stack.has(DataComponents.DYE) || stack.is(ConventionalItemTags.DYES);
         }
         return false;
     }
 
     public static DyeColor getDyeColor(final ItemStack stack) {
         if (!stack.isEmpty()) {
-            if (stack.getItem() instanceof DyeItem) {
-                return ((DyeItem) stack.getItem()).getDyeColor();
+            if (stack.has(DataComponents.DYE)) {
+                return stack.get(DataComponents.DYE);
             }
             for (final Dye dye : Dye.values()) {
                 if (stack.is(dye.getName())) {

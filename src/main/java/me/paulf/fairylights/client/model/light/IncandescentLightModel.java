@@ -6,7 +6,7 @@ import me.paulf.fairylights.server.feature.light.BrightnessLightBehavior;
 import me.paulf.fairylights.server.feature.light.Light;
 import net.minecraft.client.model.geom.ModelPart;
 import net.minecraft.client.model.geom.builders.LayerDefinition;
-import net.minecraft.util.FastColor;
+import net.minecraft.util.ARGB;
 
 public class IncandescentLightModel extends LightModel<BrightnessLightBehavior> {
     final ModelPart bulb;
@@ -34,15 +34,15 @@ public class IncandescentLightModel extends LightModel<BrightnessLightBehavior> 
     public void renderToBuffer(final PoseStack matrix, final VertexConsumer builder, final int light, final int overlay, final int color) {
         super.renderToBuffer(matrix, builder, light, overlay, color);
 
-        float r = FastColor.ARGB32.red(color) / 255f;
-        float g = FastColor.ARGB32.green(color) / 255f;
-        float b = FastColor.ARGB32.blue(color) / 255f;
-        float a = FastColor.ARGB32.alpha(color) / 255f;
+        float r = ARGB.red(color) / 255f;
+        float g = ARGB.green(color) / 255f;
+        float b = ARGB.blue(color) / 255f;
+        float a = ARGB.alpha(color) / 255f;
 
         final int emissiveLight = this.getLight(light);
         final float cr = 0.23F, cg = 0.18F, cb = 0.14F;
         final float br = this.brightness;
-        this.filament.render(matrix, builder, emissiveLight, overlay, FastColor.ARGB32.colorFromFloat(a, r * (cr * (1.0F - br) + br), g * (cg * (1.0F - br) + br), b * (cb * (1.0F - br) + br)));
+        this.filament.render(matrix, builder, emissiveLight, overlay, ARGB.colorFromFloat(a, r * (cr * (1.0F - br) + br), g * (cg * (1.0F - br) + br), b * (cb * (1.0F - br) + br)));
     }
 
     @Override
@@ -51,12 +51,12 @@ public class IncandescentLightModel extends LightModel<BrightnessLightBehavior> 
         final int emissiveLight = this.getLight(light);
         final float br = 1.0F, bg = 0.73F, bb = 0.3F;
 
-        float r = FastColor.ARGB32.red(color) / 255f;
-        float g = FastColor.ARGB32.green(color) / 255f;
-        float b = FastColor.ARGB32.blue(color) / 255f;
-        float a = FastColor.ARGB32.alpha(color) / 255f;
+        float r = ARGB.red(color) / 255f;
+        float g = ARGB.green(color) / 255f;
+        float b = ARGB.blue(color) / 255f;
+        float a = ARGB.alpha(color) / 255f;
 
-        this.bulb.render(matrix, builder, emissiveLight, overlay, FastColor.ARGB32.colorFromFloat(bi * 0.4F + 0.25F, r * (br * bi + (1.0F - bi)), g * (bg * bi + (1.0F - bi)), b * (bb * bi + (1.0F - bi))));
+        this.bulb.render(matrix, builder, emissiveLight, overlay, ARGB.colorFromFloat(bi * 0.4F + 0.25F, r * (br * bi + (1.0F - bi)), g * (bg * bi + (1.0F - bi)), b * (bb * bi + (1.0F - bi))));
         super.renderTranslucent(matrix, builder, light, overlay, color);
     }
 

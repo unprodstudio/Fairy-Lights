@@ -25,10 +25,11 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.StateDefinition;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.minecraft.world.level.block.state.properties.BooleanProperty;
+import net.minecraft.world.level.redstone.Orientation;
 import net.minecraft.world.phys.Vec3;
 import net.minecraft.world.phys.shapes.CollisionContext;
 import net.minecraft.world.phys.shapes.VoxelShape;
-import org.jetbrains.annotations.Nullable;
+import org.jspecify.annotations.Nullable;
 
 import java.util.stream.Stream;
 
@@ -53,11 +54,6 @@ public final class FastenerBlock extends DirectionalBlock implements EntityBlock
             .setValue(FACING, Direction.NORTH)
             .setValue(TRIGGERED, false)
         );
-    }
-
-    @Override
-    protected MapCodec<? extends DirectionalBlock> codec() {
-        return null;
     }
 
     @Override
@@ -117,18 +113,6 @@ public final class FastenerBlock extends DirectionalBlock implements EntityBlock
         return expect == actual ? (BlockEntityTicker<A>) ticker : null;
     }
 
-    @SuppressWarnings("deprecation")
-    @Override
-    public void onRemove(final BlockState state, final Level world, final BlockPos pos, final BlockState newState, final boolean isMoving) {
-        if (!state.is(newState.getBlock())) {
-            final BlockEntity entity = world.getBlockEntity(pos);
-            if (entity instanceof FastenerBlockEntity) {
-                CapabilityHandler.FASTENER_CAP.maybeGet(entity).ifPresent(f -> f.dropItems(world, pos));
-            }
-            super.onRemove(state, world, pos, newState, isMoving);
-        }
-    }
-
     @Override
     public boolean canSurvive(final BlockState state, final LevelReader world, final BlockPos pos) {
         final Direction facing = state.getValue(FACING);
@@ -152,9 +136,8 @@ public final class FastenerBlock extends DirectionalBlock implements EntityBlock
         return null;
     }
 
-    @SuppressWarnings("deprecation")
     @Override
-    public void neighborChanged(final BlockState state, final Level world, final BlockPos pos, final Block blockIn, final BlockPos fromPos, final boolean isMoving) {
+    protected void neighborChanged(BlockState state, Level world, BlockPos pos, Block block, @Nullable Orientation orientation, boolean movedByPiston) {
         if (state.canSurvive(world, pos)) {
             final boolean receivingPower = world.hasNeighborSignal(pos);
             final boolean isPowered = state.getValue(TRIGGERED);
@@ -178,10 +161,10 @@ public final class FastenerBlock extends DirectionalBlock implements EntityBlock
     }
 
     @Override
-    public int getAnalogOutputSignal(final BlockState state, final Level world, final BlockPos pos) {
+    protected int getAnalogOutputSignal(BlockState state, Level world, BlockPos pos, Direction direction) {
         final BlockEntity entity = world.getBlockEntity(pos);
-        if (entity == null) return super.getAnalogOutputSignal(state, world, pos);
-        return CapabilityHandler.FASTENER_CAP.maybeGet(entity).map(f -> ((Fastener<?>) f).getAllConnections().stream()).orElse(Stream.empty())
+        if (entity == null) return super.getAnalogOutputSignal(state, world, pos, direction);
+        return CapabilityHandler.FASTENER_CAP.maybeGet(entity).map(f -> f.getAllConnections().stream()).orElse(Stream.empty())
             .filter(HangingLightsConnection.class::isInstance)
             .map(HangingLightsConnection.class::cast)
             .mapToInt(c -> (int) Math.ceil(c.getJingleProgress() * 15))

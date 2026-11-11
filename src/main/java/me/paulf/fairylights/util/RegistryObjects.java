@@ -1,14 +1,14 @@
 package me.paulf.fairylights.util;
 
 import net.minecraft.core.Registry;
-import net.minecraft.resources.ResourceLocation;
-import org.jetbrains.annotations.NotNull;
+import net.minecraft.resources.Identifier;
+import org.jspecify.annotations.NonNull;
 
 public final class RegistryObjects {
     private RegistryObjects() {}
 
-    public static <T> ResourceLocation getName(@NotNull Registry<T> registry, final T type) {
-        final ResourceLocation name = registry.getKey(type);
+    public static <T> Identifier getName(@NonNull Registry<T> registry, final T type) {
+        final Identifier name = registry.getKey(type);
         if (name == null) {
             throw new NullPointerException("Missing registry name: " + type);
         }

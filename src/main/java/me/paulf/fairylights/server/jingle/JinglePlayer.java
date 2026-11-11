@@ -1,14 +1,18 @@
 package me.paulf.fairylights.server.jingle;
 
+import com.mojang.serialization.Codec;
+import com.mojang.serialization.MapCodec;
+import com.mojang.serialization.codecs.RecordCodecBuilder;
 import me.paulf.fairylights.server.feature.light.Light;
 import me.paulf.fairylights.server.sound.FLSounds;
 import net.minecraft.core.particles.ParticleOptions;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.NbtOps;
+import net.minecraft.util.StringRepresentable;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.Vec3;
-import org.jetbrains.annotations.Nullable;
+import org.jspecify.annotations.Nullable;
 
 import java.util.List;
 import java.util.Map;
@@ -17,6 +21,13 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public final class JinglePlayer {
+    public static final Codec<JinglePlayer> CODEC = StateType.CODEC.dispatch("state", State::getType, type -> type.getFactory().fieldOf("data"))
+        .xmap(state -> {
+            var player = new JinglePlayer();
+            player.state = state;
+            return player;
+        }, player -> player.state);
+
     private State<?> state = new NotPlayingState();
 
     @Nullable
@@ -40,47 +51,27 @@ public final class JinglePlayer {
         this.state = this.state.tick(world, origin, lights, isClient);
     }
 
-    public CompoundTag serialize() {
-        return StateType.serialize(this.state);
-    }
+    private enum StateType implements StringRepresentable {
+        NOT_PLAYING("not_playing", NotPlayingState.CODEC),
+        PLAYING("playing", PlayingState.CODEC);
 
-    public void deserialize(final CompoundTag compound) {
-        this.state = StateType.deserialize(compound);
-    }
+        public static final Codec<StateType> CODEC = StringRepresentable.fromEnum(StateType::values);
 
-    private enum StateType {
-        NOT_PLAYING(NotPlayingState.FACTORY),
-        PLAYING(PlayingState.FACTORY);
+        private final String serializedName;
+        private final MapCodec<? extends JinglePlayer.State<?>> factory;
 
-        private static final Map<String, StateType> MAP = Stream.of(values())
-            .collect(Collectors.toMap(StateType::getId, Function.identity()));
-
-        private final StateFactory<?> factory;
-
-        StateType(final StateFactory<?> factory) {
+        StateType(final String serializedName, final MapCodec<? extends JinglePlayer.State<?>> factory) {
+            this.serializedName = serializedName;
             this.factory = factory;
         }
 
-        private String getId() {
-            return this.factory.getId();
+        @Override
+        public String getSerializedName() {
+            return this.serializedName;
         }
 
-        private StateFactory<?> getFactory() {
-            return this.factory;
-        }
-
-        public static <S extends State<S>> CompoundTag serialize(final State<S> state) {
-            final StateFactory<S> factory = state.getFactory();
-            final CompoundTag compound = new CompoundTag();
-            compound.putString("state", factory.getId());
-            compound.put("data", factory.serialize(state.resolve()));
-            return compound;
-        }
-
-        public static State<?> deserialize(final CompoundTag compound) {
-            return MAP.getOrDefault(compound.getString("state"), NOT_PLAYING)
-                .getFactory()
-                .deserialize(compound.getCompound("data"));
+        public MapCodec<State<?>> getFactory() {
+            return (MapCodec<State<?>>) factory;
         }
     }
 
@@ -101,13 +92,14 @@ public final class JinglePlayer {
 
         public abstract State<?> tick(Level world, Vec3 origin, Light<?>[] lights, boolean isClient);
 
-        public abstract StateFactory<S> getFactory();
+        public abstract StateType getType();
 
         public abstract S resolve();
     }
 
     private static final class NotPlayingState extends State<NotPlayingState> {
-        public static final StateFactory<NotPlayingState> FACTORY = newFactory();
+        public static final NotPlayingState INSTANCE = new NotPlayingState();
+        public static final MapCodec<NotPlayingState> CODEC = MapCodec.unit(INSTANCE);
 
         @Override
         public Jingle getJingle() {
@@ -130,37 +122,38 @@ public final class JinglePlayer {
         }
 
         @Override
-        public StateFactory<NotPlayingState> getFactory() {
-            return FACTORY;
+        public StateType getType() {
+            return StateType.NOT_PLAYING;
         }
 
         @Override
         public NotPlayingState resolve() {
             return this;
         }
-
-        private static StateFactory<NotPlayingState> newFactory() {
-            return new StateFactory<NotPlayingState>() {
-                @Override
-                public String getId() {
-                    return "not_playing";
-                }
-
-                @Override
-                public CompoundTag serialize(final NotPlayingState state) {
-                    return new CompoundTag();
-                }
-
-                @Override
-                public NotPlayingState deserialize(final CompoundTag compound) {
-                    return new NotPlayingState();
-                }
-            };
-        }
     }
 
     private static final class PlayingState extends State<PlayingState> {
-        public static final StateFactory<PlayingState> FACTORY = newFactory();
+        public static final MapCodec<PlayingState> CODEC = RecordCodecBuilder.mapCodec(instance ->
+            instance.group(
+                Jingle.CODEC.fieldOf("jingle")
+                    .forGetter(state -> state.jingle),
+                Codec.INT.optionalFieldOf("lightOffset", 0)
+                    .forGetter(state -> state.lightOffset),
+                Codec.INT.optionalFieldOf("index", 0)
+                    .forGetter(state -> state.index),
+                Codec.INT.optionalFieldOf("rest", 0)
+                    .forGetter(state -> state.rest),
+                Codec.INT.optionalFieldOf("time", 0)
+                    .forGetter(state -> state.time)
+            )
+                .apply(instance, (jingle, lightOffset, index, rest, time) -> {
+                    var state = new PlayingState(jingle, lightOffset);
+                    state.index = index;
+                    state.rest = rest;
+                    state.time = time;
+                    return state;
+                })
+        );
 
         private final Jingle jingle;
 
@@ -233,49 +226,13 @@ public final class JinglePlayer {
         }
 
         @Override
-        public StateFactory<PlayingState> getFactory() {
-            return FACTORY;
+        public StateType getType() {
+            return StateType.PLAYING;
         }
 
         @Override
         public PlayingState resolve() {
             return this;
-        }
-
-        private static StateFactory<PlayingState> newFactory() {
-            return new StateFactory<PlayingState>() {
-                @Override
-                public String getId() {
-                    return "playing";
-                }
-
-                @Override
-                public CompoundTag serialize(final PlayingState state) {
-                    final CompoundTag compound = new CompoundTag();
-                    Jingle.CODEC.encodeStart(NbtOps.INSTANCE, state.jingle).result()
-                        .ifPresent(jingle -> {
-                            compound.put("jingle", jingle);
-                            compound.putInt("lightOffset", state.lightOffset);
-                            compound.putInt("index", state.index);
-                            compound.putInt("rest", state.rest);
-                            compound.putInt("time", state.time);
-                        });
-                    return compound;
-                }
-
-                @Override
-                public State<?> deserialize(final CompoundTag compound) {
-                    return Jingle.CODEC.parse(NbtOps.INSTANCE, compound.getCompound("jingle"))
-                        .result().<State<?>>map(jingle -> {
-                            final int lightOffset = compound.getInt("lightOffset");
-                            final PlayingState state = new PlayingState(jingle, lightOffset);
-                            state.index = compound.getInt("index");
-                            state.rest = compound.getInt("rest");
-                            state.time = compound.getInt("time");
-                            return state;
-                        }).orElseGet(NotPlayingState::new);
-                }
-            };
         }
 
         private static ParticleOptions[] getParticles(final Jingle jingle) {

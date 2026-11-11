@@ -11,8 +11,13 @@ public abstract class ForwardingVertexConsumer implements VertexConsumer {
     }
 
     @Override
-    public VertexConsumer setColor(int red, int green, int blue, int alpha) {
-        return delegate().setColor(red, green, blue, alpha);
+    public VertexConsumer setColor(int r, int g, int b, int a) {
+        return delegate().setColor(r, g, b, a);
+    }
+
+    @Override
+    public VertexConsumer setColor(int color) {
+        return delegate().setColor(color);
     }
 
     @Override
@@ -31,8 +36,18 @@ public abstract class ForwardingVertexConsumer implements VertexConsumer {
     }
 
     @Override
+    public VertexConsumer setUv3(float u, float v) {
+        return delegate().setUv3(u, v);
+    }
+
+    @Override
     public VertexConsumer setNormal(float normalX, float normalY, float normalZ) {
         return delegate().setNormal(normalX, normalY, normalZ);
+    }
+
+    @Override
+    public VertexConsumer setLineWidth(float width) {
+        return delegate().setLineWidth(width);
     }
 
 }

@@ -1,23 +1,27 @@
 package me.paulf.fairylights.client.renderer.entity;
 
 import com.mojang.blaze3d.vertex.PoseStack;
-import com.mojang.blaze3d.vertex.VertexConsumer;
 import me.paulf.fairylights.FairyLights;
 import me.paulf.fairylights.client.renderer.block.entity.FastenerRenderer;
+import me.paulf.fairylights.client.renderer.block.entity.state.FastenerRenderState;
 import me.paulf.fairylights.server.capability.CapabilityHandler;
 import me.paulf.fairylights.server.entity.FenceFastenerEntity;
-import net.minecraft.client.renderer.MultiBufferSource;
-import net.minecraft.client.renderer.Sheets;
+import net.fabricmc.fabric.api.client.model.loading.v1.ExtraModelKey;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.renderer.SubmitNodeCollector;
+import net.minecraft.client.renderer.block.dispatch.BlockStateModel;
 import net.minecraft.client.renderer.entity.EntityRenderer;
 import net.minecraft.client.renderer.entity.EntityRendererProvider;
+import net.minecraft.client.renderer.state.level.CameraRenderState;
 import net.minecraft.client.renderer.texture.OverlayTexture;
-import net.minecraft.client.renderer.texture.TextureAtlas;
 import net.minecraft.core.BlockPos;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.level.LightLayer;
+import org.joml.Matrix4f;
 
-public final class FenceFastenerRenderer extends EntityRenderer<FenceFastenerEntity> {
-    public static final ResourceLocation MODEL = ResourceLocation.fromNamespaceAndPath(FairyLights.ID, "block/fence_fastener");
+public final class FenceFastenerRenderer extends EntityRenderer<FenceFastenerEntity, FenceFastenerRenderState> {
+    public static final Identifier MODEL = FairyLights.id("block/fence_fastener");
+    public static final ExtraModelKey<BlockStateModel> MODEL_KEY = ExtraModelKey.create();
 
     private final FastenerRenderer renderer;
 
@@ -32,18 +36,32 @@ public final class FenceFastenerRenderer extends EntityRenderer<FenceFastenerEnt
     }
 
     @Override
-    public void render(final FenceFastenerEntity entity, final float yaw, final float delta, final PoseStack matrix, final MultiBufferSource source, final int packedLight) {
-        final VertexConsumer buf = source.getBuffer(Sheets.cutoutBlockSheet());
-        matrix.pushPose();
-        FastenerRenderer.renderBakedModel(MODEL, matrix, buf, 1.0F, 1.0F, 1.0F, packedLight, OverlayTexture.NO_OVERLAY);
-        matrix.popPose();
-        CapabilityHandler.FASTENER_CAP.maybeGet(entity).ifPresent(f -> this.renderer.render(f, delta, matrix, source, packedLight, OverlayTexture.NO_OVERLAY));
-        super.render(entity, yaw, delta, matrix, source, packedLight);
+    public FenceFastenerRenderState createRenderState() {
+        return new FenceFastenerRenderState();
     }
 
-    @SuppressWarnings("deprecation")
     @Override
-    public ResourceLocation getTextureLocation(final FenceFastenerEntity entity) {
-        return TextureAtlas.LOCATION_BLOCKS;
+    public void extractRenderState(FenceFastenerEntity entity, FenceFastenerRenderState state, float partialTicks) {
+        super.extractRenderState(entity, state, partialTicks);
+        var model = Minecraft.getInstance().getModelManager().getModel(MODEL_KEY);
+        model.collectParts(entity.getRandom(), state.model.setupModel(new Matrix4f(), false));
+
+        CapabilityHandler.FASTENER_CAP.maybeGet(entity).ifPresent(f -> {
+            var fastenerState = new FastenerRenderState();
+            this.renderer.extractRenderState(f, fastenerState, partialTicks, fastenerState.lightCoords, OverlayTexture.NO_OVERLAY);
+
+            state.fastener = fastenerState;
+        });
+    }
+
+    @Override
+    public void submit(FenceFastenerRenderState state, PoseStack matrix, SubmitNodeCollector submitNodeCollector, CameraRenderState camera) {
+        matrix.pushPose();
+        state.model.submit(matrix, submitNodeCollector, state.lightCoords, OverlayTexture.NO_OVERLAY, state.outlineColor);
+        matrix.popPose();
+        if (state.fastener != null)
+            this.renderer.submit(state.fastener, matrix, submitNodeCollector);
+
+        super.submit(state, matrix, submitNodeCollector, camera);
     }
 }

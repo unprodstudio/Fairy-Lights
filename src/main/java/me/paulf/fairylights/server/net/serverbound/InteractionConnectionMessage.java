@@ -13,7 +13,7 @@ import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.network.codec.ByteBufCodecs;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.player.Player;
@@ -21,7 +21,7 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.phys.Vec3;
 
 public final class InteractionConnectionMessage extends ConnectionMessage {
-    public static final Type<InteractionConnectionMessage> TYPE = new Type(ResourceLocation.fromNamespaceAndPath(FairyLights.ID, "interaction_connection"));
+    public static final Type<InteractionConnectionMessage> TYPE = new Type(FairyLights.id("interaction_connection"));
 
     @Override
     public Type<? extends CustomPacketPayload> type() {

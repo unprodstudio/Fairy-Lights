@@ -28,7 +28,7 @@ public class TorchLightBehavior implements BrightnessLightBehavior {
 
     @Override
     public void tick(final Level world, final Vec3 origin, final Light<?> light) {
-        if (world.random.nextFloat() < 0.08F) {
+        if (world.getRandom().nextFloat() < 0.08F) {
             this.createParticles(world, origin, light);
         }
     }

@@ -4,6 +4,7 @@ import dev.architectury.registry.registries.DeferredRegister;
 import dev.architectury.registry.registries.RegistrySupplier;
 import me.paulf.fairylights.FairyLights;
 import net.minecraft.core.registries.Registries;
+import net.minecraft.resources.ResourceKey;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.MobCategory;
 
@@ -34,6 +35,6 @@ public final class FLEntities {
              * connection. I hope you enjoy my line lengths.
              */
             .eyeHeight(1)
-            .build(FairyLights.ID + ":fastener")
+            .build(ResourceKey.create(Registries.ENTITY_TYPE, FairyLights.id("fastener")))
     );
 }

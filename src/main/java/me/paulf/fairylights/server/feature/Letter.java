@@ -1,14 +1,14 @@
 package me.paulf.fairylights.server.feature;
 
 import me.paulf.fairylights.server.connection.SymbolSet;
-import me.paulf.fairylights.util.styledstring.Style;
+import net.minecraft.network.chat.Style;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 
 public final class Letter extends HangingFeature {
     private final SymbolSet symbols;
 
-    private char letter;
+    private int letter;
 
     private Style style;
 
@@ -19,12 +19,12 @@ public final class Letter extends HangingFeature {
         this.style = style;
     }
 
-    public void set(final char letter, final Style style) {
+    public void set(final int letter, final Style style) {
         this.letter = letter;
         this.style = style;
     }
 
-    public char getLetter() {
+    public int getLetter() {
         return this.letter;
     }
 

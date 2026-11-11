@@ -3,14 +3,15 @@ package me.paulf.fairylights.server.item.components;
 import com.mojang.serialization.Codec;
 import me.paulf.fairylights.FairyLights;
 import me.paulf.fairylights.server.string.StringType;
-import me.paulf.fairylights.util.styledstring.StyledString;
 import net.minecraft.core.Registry;
 import net.minecraft.core.component.DataComponentType;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.ComponentSerialization;
 import net.minecraft.network.codec.ByteBufCodecs;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.Block;
 
@@ -48,9 +49,9 @@ public class FLComponents {
             .build()
     );
 
-    public static final DataComponentType<StyledString> STYLED_STRING = register("styled_string", DataComponentType.<StyledString>builder()
-            .persistent(StyledString.CODEC)
-            .networkSynchronized(StyledString.STREAM_CODEC)
+    public static final DataComponentType<Component> STYLED_STRING = register("styled_string", DataComponentType.<Component>builder()
+            .persistent(ComponentSerialization.CODEC)
+            .networkSynchronized(ComponentSerialization.STREAM_CODEC)
             .build()
     );
 
@@ -67,7 +68,7 @@ public class FLComponents {
     );
 
     private static <T> DataComponentType<T> register(String name, DataComponentType<T> type) {
-        return Registry.register(BuiltInRegistries.DATA_COMPONENT_TYPE, ResourceLocation.fromNamespaceAndPath(FairyLights.ID, name), type);
+        return Registry.register(BuiltInRegistries.DATA_COMPONENT_TYPE, FairyLights.id(name), type);
     }
 
     public static void init() {

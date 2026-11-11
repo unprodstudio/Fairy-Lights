@@ -9,6 +9,7 @@ import me.paulf.fairylights.server.fastener.accessor.PlayerFastenerAccessor;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.NbtOps;
 import net.minecraft.network.RegistryFriendlyByteBuf;
+import net.minecraft.network.codec.ByteBufCodecs;
 import net.minecraft.network.codec.StreamCodec;
 
 import java.util.HashMap;
@@ -43,10 +44,7 @@ public enum FastenerType {
             })
     );
 
-    public static final StreamCodec<RegistryFriendlyByteBuf, FastenerAccessor> STREAM_CODEC = StreamCodec.of(
-            (buf, accessor) -> buf.writeNbt(serialize(accessor)),
-            buf -> deserialize(Objects.requireNonNull(buf.readNbt()))
-    );
+    public static final StreamCodec<RegistryFriendlyByteBuf, FastenerAccessor> STREAM_CODEC = ByteBufCodecs.fromCodecWithRegistries(CODEC);
 
     private final Supplier<? extends FastenerAccessor> supplier;
 
@@ -59,13 +57,5 @@ public enum FastenerType {
 
     public final FastenerAccessor createAccessor() {
         return this.supplier.get();
-    }
-
-    public static CompoundTag serialize(final FastenerAccessor accessor) {
-        return (CompoundTag) CODEC.encodeStart(NbtOps.INSTANCE, accessor).getOrThrow();
-    }
-
-    public static FastenerAccessor deserialize(final CompoundTag compound) {
-        return CODEC.decode(NbtOps.INSTANCE, compound).getOrThrow().getFirst();
     }
 }

@@ -2,15 +2,16 @@
   "required": true,
   "minVersion": "0.8",
   "package": "me.paulf.fairylights.mixin",
-  "compatibilityLevel": "JAVA_21",
+  "compatibilityLevel": "JAVA_25",
   "mixins": [
     "fabric.AdvancementBuilderAccessor",
     "fabric.LootTableProviderAccessor",
     "fabric.NoteBlockMixin",
-    "fabric.ShapedRecipeAccessor"
+    "fabric.ShapedRecipeAccessor",
+    "fabric.ShapedRecipeBuilderAccessor"
   ],
   "client": [
-    "GameRendererMixin"
+    "MinecraftMixin"
   ],
   "injectors": {
     "defaultRequire": 1

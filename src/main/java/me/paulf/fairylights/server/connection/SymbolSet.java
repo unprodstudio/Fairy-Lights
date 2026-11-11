@@ -31,7 +31,7 @@ public final class SymbolSet {
         return this.chars.containsKey(character);
     }
 
-    public float getWidth(final char character) {
+    public float getWidth(final int character) {
         return this.chars.getOrDefault(character, Symbol.UNKNOWN).width * SCALE;
     }
 

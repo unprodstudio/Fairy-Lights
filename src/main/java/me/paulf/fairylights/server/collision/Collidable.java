@@ -1,7 +1,7 @@
 package me.paulf.fairylights.server.collision;
 
 import net.minecraft.world.phys.Vec3;
-import org.jetbrains.annotations.Nullable;
+import org.jspecify.annotations.Nullable;
 
 public interface Collidable {
     @Nullable

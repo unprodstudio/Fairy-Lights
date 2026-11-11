@@ -9,12 +9,12 @@ import net.minecraft.core.Registry;
 import net.minecraft.network.codec.ByteBufCodecs;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.resources.ResourceKey;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 
 public final class FeatureType {
     private static final DefaultedRegistry<FeatureType> REGISTRY = new DefaultedMappedRegistry<>(
         "default",
-        ResourceKey.createRegistryKey(ResourceLocation.fromNamespaceAndPath(FairyLights.ID, "feature")),
+        ResourceKey.createRegistryKey(FairyLights.id("feature")),
         Lifecycle.experimental(),
         false
     );
@@ -30,7 +30,7 @@ public final class FeatureType {
     }
 
     public static FeatureType register(final String name) {
-        return Registry.register(REGISTRY, ResourceLocation.parse(name), new FeatureType());
+        return Registry.register(REGISTRY, Identifier.parse(name), new FeatureType());
     }
 
     public static FeatureType fromId(final int id) {

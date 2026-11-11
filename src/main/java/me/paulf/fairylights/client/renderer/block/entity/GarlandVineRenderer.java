@@ -5,6 +5,7 @@ import com.mojang.blaze3d.vertex.VertexConsumer;
 import com.mojang.math.Axis;
 import me.paulf.fairylights.client.ClientProxy;
 import me.paulf.fairylights.client.FLModelLayers;
+import me.paulf.fairylights.client.renderer.block.entity.state.connection.GarlandVineConnectionRenderState;
 import me.paulf.fairylights.server.connection.GarlandVineConnection;
 import me.paulf.fairylights.util.Curve;
 import me.paulf.fairylights.util.FLMth;
@@ -16,13 +17,13 @@ import net.minecraft.client.model.geom.PartPose;
 import net.minecraft.client.model.geom.builders.CubeListBuilder;
 import net.minecraft.client.model.geom.builders.LayerDefinition;
 import net.minecraft.client.model.geom.builders.MeshDefinition;
-import net.minecraft.client.renderer.MultiBufferSource;
-import net.minecraft.client.renderer.RenderType;
-import net.minecraft.util.FastColor;
+import net.minecraft.client.renderer.SubmitNodeCollector;
+import net.minecraft.client.renderer.rendertype.RenderTypes;
+import net.minecraft.util.Unit;
 
 import java.util.function.Function;
 
-public class GarlandVineRenderer extends ConnectionRenderer<GarlandVineConnection> {
+public class GarlandVineRenderer extends ConnectionRenderer<GarlandVineConnection, GarlandVineConnectionRenderState> {
     private static final int RING_COUNT = 7;
 
     private static final RandomArray RAND = new RandomArray(8411, RING_COUNT * 4);
@@ -35,19 +36,29 @@ public class GarlandVineRenderer extends ConnectionRenderer<GarlandVineConnectio
     }
 
     @Override
-    protected void render(final GarlandVineConnection conn, final Curve catenary, final float delta, final PoseStack matrix, final MultiBufferSource source, final int packedLight, final int packedOverlay) {
-        super.render(conn, catenary, delta, matrix, source, packedLight, packedOverlay);
-        final int hash = conn.getUUID().hashCode();
-        final VertexConsumer buf = ClientProxy.SOLID_TEXTURE.buffer(source, RenderType::entityCutout);
+    public GarlandVineConnectionRenderState createRenderState() {
+        return new GarlandVineConnectionRenderState();
+    }
+
+    @Override
+    public void extractRenderState(GarlandVineConnection conn, GarlandVineConnectionRenderState state, float delta) {
+        super.extractRenderState(conn, state, delta);
+        state.hash = conn.getUUID().hashCode();
+    }
+
+    @Override
+    protected void submit(final GarlandVineConnectionRenderState conn, Curve catenary, final PoseStack matrix, final SubmitNodeCollector collector) {
+        super.submit(conn, catenary, matrix, collector);
+        final int hash = conn.hash;
         catenary.visitPoints(0.25F, false, (index, x, y, z, yaw, pitch) -> {
             matrix.pushPose();
             matrix.translate(x, y, z);
-            matrix.mulPose(Axis.YP.rotation(-yaw));
-            matrix.mulPose(Axis.ZP.rotation(pitch));
-            matrix.mulPose(Axis.ZP.rotationDegrees(RAND.get(index + hash) * 45.0F));
-            matrix.mulPose(Axis.YP.rotationDegrees(RAND.get(index + 8 + hash) * 60.F + 90.0F));
+            matrix.rotate(Axis.YP.rotation(-yaw));
+            matrix.rotate(Axis.ZP.rotation(pitch));
+            matrix.rotate(Axis.ZP.rotationDegrees(RAND.get(index + hash) * 45.0F));
+            matrix.rotate(Axis.YP.rotationDegrees(RAND.get(index + 8 + hash) * 60.F + 90.0F));
             this.rings.setWhich(index % RING_COUNT);
-            this.rings.renderToBuffer(matrix, buf, packedLight, packedOverlay, FastColor.ARGB32.color(255, 255, 255, 255));
+            collector.submitModel(this.rings, Unit.INSTANCE, matrix, RenderTypes.entityCutout(ClientProxy.SOLID_TEXTURE), conn.lightCoords, conn.overlayCoords, 0);
             matrix.popPose();
         });
     }
@@ -56,12 +67,12 @@ public class GarlandVineRenderer extends ConnectionRenderer<GarlandVineConnectio
         return WireModel.createLayer(39, 0, 1);
     }
 
-    public static class RingsModel extends Model {
+    public static class RingsModel extends Model<Unit> {
         final ModelPart[] roots;
         int which;
 
         RingsModel(final ModelPart root) {
-            super(RenderType::entityCutout);
+            super(root, RenderTypes::entityCutout);
             ModelPart[] roots = new ModelPart[RING_COUNT];
             for (int i = 0; i < RING_COUNT; i++) {
                 roots[i] = root.getChild(Integer.toString(i));

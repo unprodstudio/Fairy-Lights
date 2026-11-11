@@ -10,18 +10,22 @@ import me.paulf.fairylights.util.Curve;
 import me.paulf.fairylights.util.RegistryObjects;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.HolderLookup;
+import net.minecraft.core.UUIDUtil;
 import net.minecraft.core.component.DataComponentMap;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.Tag;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.util.Mth;
+import net.minecraft.util.RandomSource;
 import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.storage.ValueInput;
+import net.minecraft.world.level.storage.ValueOutput;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
-import org.jetbrains.annotations.Nullable;
+import org.jspecify.annotations.Nullable;
 
 import java.util.*;
 import java.util.Map.Entry;
@@ -145,16 +149,16 @@ public abstract class AbstractFastener<F extends FastenerAccessor> implements Fa
 
     private void drop(final Level world, final BlockPos pos, final Connection connection) {
         if (!connection.shouldDrop()) return;
-        final float offsetX = world.random.nextFloat() * 0.8F + 0.1F;
-        final float offsetY = world.random.nextFloat() * 0.8F + 0.1F;
-        final float offsetZ = world.random.nextFloat() * 0.8F + 0.1F;
+        final float offsetX = world.getRandom().nextFloat() * 0.8F + 0.1F;
+        final float offsetY = world.getRandom().nextFloat() * 0.8F + 0.1F;
+        final float offsetZ = world.getRandom().nextFloat() * 0.8F + 0.1F;
         final ItemStack stack = connection.getItemStack();
         final ItemEntity entityItem = new ItemEntity(world, pos.getX() + offsetX, pos.getY() + offsetY, pos.getZ() + offsetZ, stack);
         final float scale = 0.05F;
         entityItem.setDeltaMovement(
-            world.random.nextGaussian() * scale,
-            world.random.nextGaussian() * scale + 0.2F,
-            world.random.nextGaussian() * scale
+            world.getRandom().nextGaussian() * scale,
+            world.getRandom().nextGaussian() * scale + 0.2F,
+            world.getRandom().nextGaussian() * scale
         );
         world.addFreshEntity(entityItem);
         connection.noDrop();
@@ -226,7 +230,7 @@ public abstract class AbstractFastener<F extends FastenerAccessor> implements Fa
 
     @Override
     public Connection connect(final Level world, final Fastener<?> destination, final ConnectionType<?> type, final DataComponentMap components, final boolean drop) {
-        final UUID uuid = Mth.createInsecureUUID();
+        final UUID uuid = Mth.createInsecureUUID(world.getRandom());
         final Connection connection = this.createOutgoingConnection(world, uuid, destination, type, components, drop);
         destination.createIncomingConnection(world, uuid, this, type);
         return connection;
@@ -248,51 +252,40 @@ public abstract class AbstractFastener<F extends FastenerAccessor> implements Fa
     }
 
     @Override
-    public CompoundTag serializeNBT(HolderLookup.Provider registries) {
-        final CompoundTag compound = new CompoundTag();
-        final ListTag outgoing = new ListTag();
+    public void serializeNBT(ValueOutput output) {
+        final var outgoing = output.childrenList("outgoing");
         for (final Entry<UUID, Connection> connectionEntry : this.outgoing.entrySet()) {
             final UUID uuid = connectionEntry.getKey();
             final Connection connection = connectionEntry.getValue();
-            final CompoundTag connectionCompound = new CompoundTag();
-            connectionCompound.put("connection", connection.serialize(registries));
-            connectionCompound.putString("type", RegistryObjects.getName(FairyLights.CONNECTION_TYPES, connection.getType()).toString());
-            connectionCompound.putUUID("uuid", uuid);
-            outgoing.add(connectionCompound);
+            final var connectionCompound = outgoing.addChild();
+            connection.serialize(output.child("connection"));
+            connectionCompound.store("type", FairyLights.CONNECTION_TYPES.byNameCodec(), connection.getType());
+            connectionCompound.store("uuid", UUIDUtil.CODEC, uuid);
         }
-        compound.put("outgoing", outgoing);
-        final ListTag incoming = new ListTag();
+        final var incoming = output.childrenList("incoming");
         for (final Entry<UUID, Incoming> e : this.incoming.entrySet()) {
-            final CompoundTag tag = new CompoundTag();
-            tag.putUUID("uuid", e.getKey());
-            tag.put("fastener", FastenerType.serialize(e.getValue().fastener));
-            incoming.add(tag);
+            final var tag = incoming.addChild();
+            tag.store("uuid", UUIDUtil.CODEC, e.getKey());
+            tag.store("fastener", FastenerType.CODEC, e.getValue().fastener);
         }
-        compound.put("incoming", incoming);
-        return compound;
     }
 
     @Override
-    public void deserializeNBT(final CompoundTag compound, HolderLookup.Provider registries) {
-        final ListTag listConnections = compound.getList("outgoing", Tag.TAG_COMPOUND);
+    public void deserializeNBT(ValueInput input) {
+        final var listConnections = input.childrenListOrEmpty("outgoing");
         final List<UUID> nbtUUIDs = new ArrayList<>();
-        for (int i = 0; i < listConnections.size(); i++) {
-            final CompoundTag connectionCompound = listConnections.getCompound(i);
-            final UUID uuid;
-            if (connectionCompound.hasUUID("uuid")) {
-                uuid = connectionCompound.getUUID("uuid");
-            } else {
-                uuid = Mth.createInsecureUUID();
-            }
+        for (ValueInput connectionCompound : listConnections) {
+            final UUID uuid = connectionCompound.read("uuid", UUIDUtil.CODEC)
+                .orElseGet(() -> Mth.createInsecureUUID(RandomSource.create()));
             nbtUUIDs.add(uuid);
             if (this.outgoing.containsKey(uuid)) {
                 final Connection connection = this.outgoing.get(uuid);
-                connection.deserialize(connectionCompound.getCompound("connection"), registries);
+                connection.deserialize(connectionCompound.childOrEmpty("connection"));
             } else {
-                final ConnectionType<?> type = FairyLights.CONNECTION_TYPES.get(ResourceLocation.tryParse(connectionCompound.getString("type")));
+                final ConnectionType<?> type = connectionCompound.read("type", FairyLights.CONNECTION_TYPES.byNameCodec()).orElse(null);
                 if (type != null) {
                     final Connection connection = type.create(this.world, this, uuid);
-                    connection.deserialize(connectionCompound.getCompound("connection"), registries);
+                    connection.deserialize(connectionCompound.childOrEmpty("connection"));
                     this.outgoing.put(uuid, connection);
                 }
             }
@@ -306,11 +299,10 @@ public abstract class AbstractFastener<F extends FastenerAccessor> implements Fa
             }
         }
         this.incoming.clear();
-        final ListTag incoming = compound.getList("incoming", Tag.TAG_COMPOUND);
-        for (int i = 0; i < incoming.size(); i++) {
-            final CompoundTag incomingNbt = incoming.getCompound(i);
-            final UUID uuid = incomingNbt.getUUID("uuid");
-            final FastenerAccessor fastener = FastenerType.deserialize(incomingNbt.getCompound("fastener"));
+        final var incoming = input.childrenListOrEmpty("incoming");
+        for (ValueInput incomingNbt : incoming) {
+            final UUID uuid = incomingNbt.read("uuid", UUIDUtil.CODEC).orElseThrow();
+            final FastenerAccessor fastener = incomingNbt.read("fastener", FastenerType.CODEC).orElseThrow();
             this.incoming.put(uuid, new Incoming(fastener, uuid));
         }
         this.setDirty();

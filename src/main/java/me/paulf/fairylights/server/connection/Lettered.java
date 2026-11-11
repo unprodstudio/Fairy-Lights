@@ -1,10 +1,12 @@
 package me.paulf.fairylights.server.connection;
 
 import me.paulf.fairylights.server.collision.Intersection;
-import me.paulf.fairylights.util.styledstring.StyledString;
 import me.paulf.fairylights.util.styledstring.StylingPresence;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.Style;
+import net.minecraft.util.FormattedCharSink;
 import net.minecraft.world.entity.player.Player;
 
 import java.util.function.Function;
@@ -18,18 +20,13 @@ public interface Lettered {
         return Character.isValidCodePoint(chr) && ((((1 << Character.NON_SPACING_MARK | 1 << Character.MODIFIER_SYMBOL) >> Character.getType(chr)) & 1) == 0);
     }
 
-    default boolean isSupportedText(final StyledString text) {
-        for (int i = 0; i < text.length(); i++) {
-            if (!this.isSupportedCharacter(text.charAt(i))) {
-                return false;
-            }
-        }
-        return true;
+    default boolean isSupportedText(final Component text) {
+        return text.getVisualOrderText().accept((_, _, codepoint) -> this.isSupportedCharacter(codepoint));
     }
 
-    void setText(StyledString text);
+    void setText(Component text);
 
-    StyledString getText();
+    Component getText();
 
     default String getAllowedDescription() {
         return "";
@@ -43,7 +40,7 @@ public interface Lettered {
 
     default boolean openTextGui(final Player player, final PlayerAction action, final Intersection intersection) {
         if (action == PlayerAction.INTERACT && player.isSecondaryUseActive()) {
-            Minecraft.getInstance().setScreen(this.createTextGUI());
+            Minecraft.getInstance().gui.setScreen(this.createTextGUI());
             return false;
         }
         return true;

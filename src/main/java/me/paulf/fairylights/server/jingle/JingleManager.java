@@ -9,7 +9,8 @@ import it.unimi.dsi.fastutil.objects.Object2ObjectMaps;
 import it.unimi.dsi.fastutil.objects.Object2ObjectOpenHashMap;
 import me.paulf.fairylights.FairyLights;
 import net.fabricmc.fabric.api.resource.IdentifiableResourceReloadListener;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.FileToIdConverter;
+import net.minecraft.resources.Identifier;
 import net.minecraft.server.packs.resources.ResourceManager;
 import net.minecraft.server.packs.resources.SimpleJsonResourceReloadListener;
 import net.minecraft.util.profiling.ProfilerFiller;
@@ -18,17 +19,13 @@ import org.apache.logging.log4j.Logger;
 
 import java.util.Map;
 
-public class JingleManager extends SimpleJsonResourceReloadListener implements IdentifiableResourceReloadListener {
-    private static final Logger LOGGER = LogManager.getLogger();
-
-    private static final Gson GSON = new GsonBuilder().create();
-
+public class JingleManager extends SimpleJsonResourceReloadListener<Jingle> implements IdentifiableResourceReloadListener {
     public static final JingleManager INSTANCE = new JingleManager();
 
     private Object2ObjectMap<String, JingleLibrary> libraries = Object2ObjectMaps.emptyMap();
 
     public JingleManager() {
-        super(GSON, "jingles");
+        super(Jingle.CODEC, FileToIdConverter.json("jingles"));
     }
 
     public JingleLibrary get(final String library) {
@@ -36,16 +33,14 @@ public class JingleManager extends SimpleJsonResourceReloadListener implements I
     }
 
     @Override
-    protected void apply(final Map<ResourceLocation, JsonElement> elements, final ResourceManager manager, final ProfilerFiller profiler) {
+    protected void apply(Map<Identifier, Jingle> elements, ResourceManager manager, ProfilerFiller profiler) {
         final Object2ObjectMap<String, JingleLibrary.Builder> builders = new Object2ObjectOpenHashMap<>();
-        elements.forEach((file, json) -> {
+        elements.forEach((file, jingle) -> {
             final String path = file.getPath();
             final int sl = path.indexOf('/');
             final String library = path.substring(0, Math.max(0, sl));
-            final ResourceLocation name = ResourceLocation.fromNamespaceAndPath(file.getNamespace(), path.substring(sl + 1));
-            Jingle.CODEC.parse(JsonOps.INSTANCE, json)
-                .resultOrPartial(error -> LOGGER.warn("Parsing error loading jingle {}: {}", file, error))
-                .ifPresent(jingle -> builders.computeIfAbsent(library, l -> new JingleLibrary.Builder()).add(name, jingle));
+            final Identifier name = Identifier.fromNamespaceAndPath(file.getNamespace(), path.substring(sl + 1));
+            builders.computeIfAbsent(library, _ -> new JingleLibrary.Builder()).add(name, jingle);
         });
         final Object2ObjectMap<String, JingleLibrary> libraries = new Object2ObjectOpenHashMap<>(builders.size());
         Object2ObjectMaps.fastForEach(builders, e -> libraries.put(e.getKey(), e.getValue().build()));
@@ -53,7 +48,7 @@ public class JingleManager extends SimpleJsonResourceReloadListener implements I
     }
 
     @Override
-    public ResourceLocation getFabricId() {
-        return ResourceLocation.fromNamespaceAndPath(FairyLights.ID, "jingles");
+    public Identifier getFabricId() {
+        return FairyLights.id("jingles");
     }
 }

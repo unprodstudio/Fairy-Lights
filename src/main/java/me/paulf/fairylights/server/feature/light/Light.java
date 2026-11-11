@@ -71,10 +71,10 @@ public final class Light<T extends LightBehavior> extends HangingFeature {
             final double y = origin.y + this.point.y;
             final double z = origin.z + this.point.z;
             for (final ParticleOptions particle : particles) {
-                double vx = world.random.nextGaussian();
-                double vy = world.random.nextGaussian();
-                double vz = world.random.nextGaussian();
-                final double t = world.random.nextDouble() * (0.4 - 0.2) + 0.2;
+                double vx = world.getRandom().nextGaussian();
+                double vy = world.getRandom().nextGaussian();
+                double vz = world.getRandom().nextGaussian();
+                final double t = world.getRandom().nextDouble() * (0.4 - 0.2) + 0.2;
                 final double mag = t / Math.sqrt(vx * vx + vy * vy + vz * vz);
                 vx *= mag;
                 vy *= mag;
@@ -83,7 +83,7 @@ public final class Light<T extends LightBehavior> extends HangingFeature {
             }
             if (this.lastJingledTick != this.tick) {
                 world.playLocalSound(x, y, z, sound, SoundSource.BLOCKS, FLConfig.getJingleAmplitude() / 16F, (float) Math.pow(2, (note - 12) / 12F), false);
-                this.startSwaying(world.random.nextBoolean());
+                this.startSwaying(world.getRandom().nextBoolean());
                 this.lastJingledTick = this.tick;
             }
         }

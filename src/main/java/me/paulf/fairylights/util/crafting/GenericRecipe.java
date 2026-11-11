@@ -10,10 +10,13 @@ import me.paulf.fairylights.util.crafting.ingredient.AuxiliaryIngredient;
 import me.paulf.fairylights.util.crafting.ingredient.EmptyRegularIngredient;
 import me.paulf.fairylights.util.crafting.ingredient.GenericIngredient;
 import me.paulf.fairylights.util.crafting.ingredient.RegularIngredient;
+import net.fabricmc.fabric.api.recipe.v1.ingredient.DefaultCustomIngredients;
 import net.minecraft.core.HolderLookup;
+import net.minecraft.core.HolderSet;
 import net.minecraft.core.NonNullList;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
 import net.minecraft.world.item.crafting.*;
 import net.minecraft.world.level.Level;
 
@@ -45,7 +48,7 @@ public final class GenericRecipe extends CustomRecipe {
     private int room;
 
     GenericRecipe(final Supplier<? extends RecipeSerializer<GenericRecipe>> serializer, final ItemStack output, final RegularIngredient[] ingredients, final AuxiliaryIngredient<?>[] auxiliaryIngredients, final int width, final int height, final int outputIngredient) {
-        super(CraftingBookCategory.MISC);
+        super();
         Preconditions.checkArgument(width > 0, "width must be greater than zero");
         Preconditions.checkArgument(height > 0, "height must be greater than zero");
         this.serializer = Objects.requireNonNull(serializer, "serializer");
@@ -76,13 +79,13 @@ public final class GenericRecipe extends CustomRecipe {
         return this.room;
     }
 
-    private NonNullList<Ingredient> getDisplayIngredients() {
-        final NonNullList<Ingredient> ingredients = NonNullList.withSize(9, Ingredient.EMPTY);
+    private List<Ingredient> getDisplayIngredients() {
+        final List<Ingredient> ingredients = new ArrayList<>(9);
         for (int i = 0; i < this.ingredients.length; i++) {
             final int x = i % this.width;
             final int y = i / this.width;
             final ItemStack[] stacks = this.ingredients[i].getInputs().toArray(new ItemStack[0]);
-            ingredients.set(x + y * 3, Ingredient.of(stacks));
+            ingredients.set(x + y * 3, DefaultCustomIngredients.any(Arrays.stream(stacks).map(DefaultCustomIngredients::components).toArray(Ingredient[]::new)));
         }
         for (int i = 0, slot = 0; slot < ingredients.size(); slot++) {
             final Ingredient ing = ingredients.get(slot);
@@ -91,13 +94,13 @@ public final class GenericRecipe extends CustomRecipe {
                     final AuxiliaryIngredient<?> aux = this.auxiliaryIngredients[i++];
                     if (aux.isRequired()) {
                         final ItemStack[] stacks = aux.getInputs().toArray(new ItemStack[0]);
-                        ingredients.set(slot, Ingredient.of(stacks));
+                        ingredients.set(slot, DefaultCustomIngredients.any(Arrays.stream(stacks).map(DefaultCustomIngredients::components).toArray(Ingredient[]::new)));
                         break;
                     }
                 }
             }
         }
-        return ingredients;
+        return ingredients.stream().filter(e -> e != null).toList();
     }
 
     @Override
@@ -106,7 +109,7 @@ public final class GenericRecipe extends CustomRecipe {
     }
 
     @Override
-    public RecipeSerializer<?> getSerializer() {
+    public RecipeSerializer<? extends CustomRecipe> getSerializer() {
         return this.serializer.get();
     }
 
@@ -131,11 +134,11 @@ public final class GenericRecipe extends CustomRecipe {
     }
 
     @Override
-    public NonNullList<Ingredient> getIngredients() {
-        return this.getDisplayIngredients();
+    public PlacementInfo placementInfo() {
+        return PlacementInfo.create(this.getDisplayIngredients());
     }
 
-    @Override
+//    @Override
     public boolean canCraftInDimensions(final int width, final int height) {
         return this.width <= width && this.height <= height && (this.getRoom() >= 0 || width * height - this.width * this.height + this.getRoom() >= 0);
     }
@@ -237,15 +240,15 @@ public final class GenericRecipe extends CustomRecipe {
     }
 
     @Override
-    public ItemStack assemble(CraftingInput input, HolderLookup.Provider registries) {
+    public ItemStack assemble(CraftingInput input) {
         final ItemStack result = this.result;
         return result.isEmpty() ? result : result.copy();
     }
 
-    @Override
-    public ItemStack getResultItem(HolderLookup.Provider registries) {
-        return this.output;
-    }
+//    @Override
+//    public ItemStack getResultItem() {
+//        return this.output;
+//    }
 
     public interface MatchResult<I extends GenericIngredient<I, M>, M extends MatchResult<I, M>> {
         I getIngredient();

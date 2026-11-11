@@ -25,6 +25,7 @@ import net.minecraft.network.protocol.Packet;
 import net.minecraft.network.protocol.game.ClientboundBlockEventPacket;
 import net.minecraft.server.players.PlayerList;
 import net.minecraft.sounds.SoundSource;
+import net.minecraft.util.ProblemReporter;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.decoration.BlockAttachedEntity;
@@ -37,6 +38,7 @@ import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.FenceBlock;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.NoteBlockInstrument;
+import net.minecraft.world.level.storage.TagValueOutput;
 import net.minecraft.world.phys.AABB;
 
 public final class ServerEventHandler {
@@ -57,7 +59,9 @@ public final class ServerEventHandler {
     public void onTick(final Player player) {
         CapabilityHandler.FASTENER_CAP.maybeGet(player).ifPresent(fastener -> {
             if (fastener.update() && !player.level().isClientSide()) {
-                ServerProxy.sendToPlayersWatchingEntity(new UpdateEntityFastenerMessage(player, fastener.serializeNBT(player.registryAccess())), player);
+                TagValueOutput output = TagValueOutput.createWithContext(ProblemReporter.DISCARDING, player.registryAccess());
+                fastener.serializeNBT(output);
+                ServerProxy.sendToPlayersWatchingEntity(new UpdateEntityFastenerMessage(player, output.buildResult()), player);
             }
         });
     }
@@ -142,7 +146,7 @@ public final class ServerEventHandler {
     public static boolean tryJingle(final Level world, final HangingLightsConnection hangingLights, final String lib) {
         if (world.isClientSide()) return false;
         final Light<?>[] lights = hangingLights.getFeatures();
-        final Jingle jingle = JingleManager.INSTANCE.get(lib).getRandom(world.random, lights.length);
+        final Jingle jingle = JingleManager.INSTANCE.get(lib).getRandom(world.getRandom(), lights.length);
         if (jingle != null) {
             final int lightOffset = lights.length / 2 - jingle.getRange() / 2;
             hangingLights.play(jingle, lightOffset);

@@ -1,24 +1,28 @@
 package me.paulf.fairylights.client.gui.component;
 
-import com.mojang.blaze3d.systems.RenderSystem;
+import me.paulf.fairylights.FairyLights;
 import me.paulf.fairylights.client.gui.EditLetteredConnectionScreen;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.Button;
+import net.minecraft.client.input.InputWithModifiers;
+import net.minecraft.client.input.MouseButtonEvent;
+import net.minecraft.client.renderer.RenderPipelines;
 import net.minecraft.network.chat.Component;
+import net.minecraft.resources.Identifier;
 
 public class ToggleButton extends Button {
-    private final int u;
-
-    private final int v;
-
     private boolean value;
-
     private boolean pressed;
 
-    public ToggleButton(final int x, final int y, final int u, final int v, final Component msg, final Button.OnPress pressable) {
+    private final Identifier normal;
+    private final Identifier hover;
+    private final Identifier toggled;
+
+    public ToggleButton(final int x, final int y, String name, final Component msg, final Button.OnPress pressable) {
         super(x, y, 20, 20, msg, pressable, DEFAULT_NARRATION);
-        this.u = u;
-        this.v = v;
+        this.normal = FairyLights.id("style/" + name);
+        this.hover = this.normal.withSuffix("_hover");
+        this.toggled = this.normal.withSuffix("_toggled");
     }
 
     public void setValue(final boolean value) {
@@ -30,36 +34,35 @@ public class ToggleButton extends Button {
     }
 
     @Override
-    public void onPress() {
+    public void onPress(InputWithModifiers input) {
         this.value = !this.value;
         this.pressed = true;
-        super.onPress();
+        super.onPress(input);
     }
 
     @Override
-    public void onRelease(final double mouseX, final double mouseY) {
+    public void onRelease(MouseButtonEvent event) {
         this.pressed = false;
     }
 
     @Override
-    public void renderWidget(final GuiGraphics stack, final int mouseX, final int mouseY, final float delta) {
+    protected void extractContents(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float a) {
         if (this.visible) {
-            RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
-            final int t;
+            final Identifier sprite;
             if (this.isHovered) {
                 if (this.pressed) {
-                    t = 2;
+                    sprite = this.toggled;
                 } else {
-                    t = 1;
+                    sprite = this.hover;
                 }
             } else {
                 if (this.value) {
-                    t = 2;
+                    sprite = this.toggled;
                 } else {
-                    t = 0;
+                    sprite = this.normal;
                 }
             }
-            stack.blit(EditLetteredConnectionScreen.WIDGETS_TEXTURE, this.getX(), this.getY(), this.u, this.v + this.height * t, this.width, this.height);
+            graphics.blitSprite(RenderPipelines.GUI_TEXTURED, sprite, this.getX(), this.getY(), this.width, this.height);
         }
     }
 }

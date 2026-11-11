@@ -8,7 +8,7 @@ import me.paulf.fairylights.server.fastener.BlockFastener;
 import me.paulf.fairylights.server.fastener.Fastener;
 import me.paulf.fairylights.server.fastener.FenceFastener;
 import me.paulf.fairylights.server.fastener.PlayerFastener;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.entity.player.Player;
 import org.ladysnake.cca.api.v3.block.BlockComponentFactoryRegistry;
 import org.ladysnake.cca.api.v3.block.BlockComponentInitializer;
@@ -18,7 +18,7 @@ import org.ladysnake.cca.api.v3.entity.EntityComponentFactoryRegistry;
 import org.ladysnake.cca.api.v3.entity.EntityComponentInitializer;
 
 public final class CapabilityHandler implements BlockComponentInitializer, EntityComponentInitializer {
-    public static final ResourceLocation FASTENER_ID = ResourceLocation.fromNamespaceAndPath(FairyLights.ID, "fastener");
+    public static final Identifier FASTENER_ID = FairyLights.id("fastener");
     public static final ComponentKey<Fastener<?>> FASTENER_CAP = ComponentRegistry.getOrCreate(FASTENER_ID, (Class<Fastener<?>>) (Object) Fastener.class);
 
     public static void register() {

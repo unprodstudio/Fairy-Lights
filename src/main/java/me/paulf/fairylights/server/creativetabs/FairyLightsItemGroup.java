@@ -7,14 +7,13 @@ import me.paulf.fairylights.server.item.DyeableItem;
 import me.paulf.fairylights.server.item.FLItems;
 import me.paulf.fairylights.server.item.components.FLComponents;
 import me.paulf.fairylights.server.item.crafting.FLCraftingRecipes;
-import me.paulf.fairylights.util.styledstring.StyledString;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.item.CreativeModeTab;
 import net.minecraft.world.item.DyeColor;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
-import org.jetbrains.annotations.NotNull;
+import org.jspecify.annotations.NonNull;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -48,7 +47,7 @@ public final class FairyLightsItemGroup
           output.acceptAll(generateCollection(FLItems.TINSEL.get()));
 
           final ItemStack bunting = new ItemStack(FLItems.LETTER_BUNTING.get(), 1);
-          bunting.set(FLComponents.STYLED_STRING, new StyledString());
+          bunting.set(FLComponents.STYLED_STRING, Component.empty());
           output.accept(bunting);
           output.accept(new ItemStack(FLItems.GARLAND.get()));
 
@@ -80,7 +79,7 @@ public final class FairyLightsItemGroup
           output.accept(new ItemStack(FLItems.INCANDESCENT_LIGHT.get()));
       }).build());
 
-    private static Collection<ItemStack> generateCollection(final @NotNull Item item)
+    private static Collection<ItemStack> generateCollection(final @NonNull Item item)
     {
         final List<ItemStack> stacks = new ArrayList<>();
         for (final DyeColor color : DyeColor.values())

@@ -3,6 +3,7 @@ package me.paulf.fairylights.server.fastener.accessor;
 import me.paulf.fairylights.server.capability.CapabilityHandler;
 import me.paulf.fairylights.server.fastener.EntityFastener;
 import me.paulf.fairylights.server.fastener.Fastener;
+import net.minecraft.core.UUIDUtil;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.DoubleTag;
 import net.minecraft.nbt.ListTag;
@@ -12,7 +13,7 @@ import net.minecraft.world.entity.Entity;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
-import org.jetbrains.annotations.Nullable;
+import org.jspecify.annotations.Nullable;
 
 import java.util.Optional;
 import java.util.UUID;
@@ -86,26 +87,17 @@ public abstract class EntityFastenerAccessor<E extends Entity> implements Fasten
     @Override
     public CompoundTag serialize() {
         final CompoundTag tag = new CompoundTag();
-        tag.putUUID("UUID", this.uuid);
+        tag.store("UUID", UUIDUtil.CODEC, this.uuid);
         if (this.pos != null) {
-            final ListTag pos = new ListTag();
-            pos.add(DoubleTag.valueOf(this.pos.x));
-            pos.add(DoubleTag.valueOf(this.pos.y));
-            pos.add(DoubleTag.valueOf(this.pos.z));
-            tag.put("Pos", pos);
+            tag.store("Pos", Vec3.CODEC, this.pos);
         }
         return tag;
     }
 
     @Override
     public void deserialize(final CompoundTag tag) {
-        this.uuid = tag.getUUID("UUID");
-        if (tag.contains("Pos", Tag.TAG_LIST)) {
-            final ListTag pos = tag.getList("Pos", Tag.TAG_DOUBLE);
-            this.pos = new Vec3(pos.getDouble(0), pos.getDouble(1), pos.getDouble(2));
-        } else {
-            this.pos = null;
-        }
+        this.uuid = tag.read("UUID", UUIDUtil.CODEC).orElseThrow();
+        this.pos = tag.read("Pos", Vec3.CODEC).orElse(null);
         this.entity = null;
     }
 }

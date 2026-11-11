@@ -9,7 +9,7 @@ import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.NbtUtils;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntity;
-import org.jetbrains.annotations.Nullable;
+import org.jspecify.annotations.Nullable;
 
 import java.util.Optional;
 
@@ -63,13 +63,12 @@ public final class BlockFastenerAccessor implements FastenerAccessor {
     @Override
     public CompoundTag serialize() {
         var tag = new CompoundTag();
-        var pos = NbtUtils.writeBlockPos(this.pos);
-        tag.put("pos", pos);
+        tag.store("pos", BlockPos.CODEC, pos);
         return tag;
     }
 
     @Override
     public void deserialize(final CompoundTag nbt) {
-        this.pos = NbtUtils.readBlockPos(nbt, "pos").orElseThrow();
+        this.pos = nbt.read("pos", BlockPos.CODEC).orElseThrow();
     }
 }

@@ -4,9 +4,11 @@ import me.paulf.fairylights.server.item.components.FLComponents;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.Tag;
 import net.minecraft.network.chat.Component;
-import net.minecraft.util.FastColor;
+import net.minecraft.util.ARGB;
 import net.minecraft.world.item.DyeColor;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.storage.ValueInput;
+import net.minecraft.world.level.storage.ValueOutput;
 
 import java.util.Arrays;
 import java.util.Optional;
@@ -46,10 +48,10 @@ public final class DyeableItem {
 
     public static int getColor(final DyeColor color) {
         if (color == DyeColor.BLACK) {
-            return FastColor.ARGB32.color(0x32, 0x32, 0x32);
+            return ARGB.color(0x32, 0x32, 0x32);
         }
         if (color == DyeColor.GRAY) {
-            return FastColor.ARGB32.color(0x60, 0x60, 0x60);
+            return ARGB.color(0x60, 0x60, 0x60);
         }
         return color.getTextureDiffuseColor();
     }
@@ -68,20 +70,19 @@ public final class DyeableItem {
         return stack;
     }
 
-    public static CompoundTag setColor(final CompoundTag tag, final DyeColor dye) {
-        return setColor(tag, getColor(dye));
+    public static void setColor(final ValueOutput tag, final DyeColor dye) {
+        setColor(tag, getColor(dye));
     }
 
-    public static CompoundTag setColor(final CompoundTag tag, final int color) {
+    public static void setColor(final ValueOutput tag, final int color) {
         tag.putInt("color", color);
-        return tag;
     }
 
     public static int getColor(final ItemStack stack) {
         return stack.has(FLComponents.COLOR) ? stack.get(FLComponents.COLOR) : 0xFFFFFFFF;
     }
 
-    public static int getColor(final CompoundTag tag) {
-        return tag.contains("color", Tag.TAG_INT) ? tag.getInt("color") : 0xFFFFFFFF;
+    public static int getColor(final ValueInput tag) {
+        return tag.getIntOr("color", -1);
     }
 }

@@ -37,7 +37,7 @@ import net.minecraft.world.phys.shapes.BooleanOp;
 import net.minecraft.world.phys.shapes.CollisionContext;
 import net.minecraft.world.phys.shapes.Shapes;
 import net.minecraft.world.phys.shapes.VoxelShape;
-import org.jetbrains.annotations.Nullable;
+import org.jspecify.annotations.Nullable;
 
 import java.util.Collections;
 import java.util.List;
@@ -90,11 +90,6 @@ public class LightBlock extends FaceAttachedHorizontalDirectionalBlock implement
     @Override
     public BlockEntity newBlockEntity(final BlockPos pos, final BlockState state) {
         return new LightBlockEntity(pos, state);
-    }
-
-    @Override
-    protected MapCodec<? extends FaceAttachedHorizontalDirectionalBlock> codec() {
-        return null;
     }
 
     @Override
@@ -206,7 +201,7 @@ public class LightBlock extends FaceAttachedHorizontalDirectionalBlock implement
     }
 
     @Override
-    public ItemStack getCloneItemStack(LevelReader world, BlockPos pos, BlockState state) {
+    protected ItemStack getCloneItemStack(LevelReader world, BlockPos pos, BlockState state, boolean includeData) {
         final BlockEntity entity = world.getBlockEntity(pos);
         if (entity instanceof LightBlockEntity) {
             return ((LightBlockEntity) entity).getLight().getItem().copy();

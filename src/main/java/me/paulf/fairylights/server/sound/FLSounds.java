@@ -4,7 +4,7 @@ import dev.architectury.registry.registries.DeferredRegister;
 import dev.architectury.registry.registries.RegistrySupplier;
 import me.paulf.fairylights.FairyLights;
 import net.minecraft.core.registries.Registries;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.sounds.SoundEvent;
 
 public final class FLSounds {
@@ -29,6 +29,6 @@ public final class FLSounds {
     public static final RegistrySupplier<SoundEvent> FEATURE_LIGHT_TURNOFF = create("feature.light_turnoff");
 
     private static RegistrySupplier<SoundEvent> create(final String name) {
-        return REG.register(name, () -> SoundEvent.createVariableRangeEvent(ResourceLocation.fromNamespaceAndPath(FairyLights.ID, name)));
+        return REG.register(name, () -> SoundEvent.createVariableRangeEvent(FairyLights.id(name)));
     }
 }

@@ -16,6 +16,7 @@ import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.NbtUtils;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.tags.BlockTags;
+import net.minecraft.util.ProblemReporter;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.decoration.BlockAttachedEntity;
 import net.minecraft.world.entity.player.Player;
@@ -28,6 +29,7 @@ import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.SoundType;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.storage.TagValueOutput;
 import net.minecraft.world.phys.Vec3;
 
 import java.util.Optional;
@@ -87,7 +89,9 @@ public abstract class ConnectionItem extends Item {
     private boolean isConnectionInOtherHand(final Level world, final Player user, final ItemStack stack) {
         final Fastener<?> attacher = CapabilityHandler.FASTENER_CAP.maybeGet(user).orElseThrow(IllegalStateException::new);
         return attacher.getFirstConnection().filter(connection -> {
-            final CompoundTag nbt = connection.serializeLogic(world.registryAccess());
+            final TagValueOutput output = TagValueOutput.createWithContext(ProblemReporter.DISCARDING, world.registryAccess());
+            connection.serializeLogic(output);
+            final CompoundTag nbt = output.buildResult();
 
             if (nbt.isEmpty())
                 return true;

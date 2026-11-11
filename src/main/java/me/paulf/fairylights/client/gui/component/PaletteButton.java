@@ -1,39 +1,37 @@
 package me.paulf.fairylights.client.gui.component;
 
-import com.mojang.blaze3d.platform.GlStateManager;
-import com.mojang.blaze3d.systems.RenderSystem;
+import me.paulf.fairylights.FairyLights;
 import me.paulf.fairylights.client.gui.EditLetteredConnectionScreen;
+import me.paulf.fairylights.client.renderer.FLRenderPipelines;
 import me.paulf.fairylights.util.FLMth;
-import me.paulf.fairylights.util.styledstring.StyledString;
+import me.paulf.fairylights.util.Utils;
 import net.minecraft.ChatFormatting;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.Button;
+import net.minecraft.client.input.InputWithModifiers;
+import net.minecraft.client.input.MouseButtonEvent;
+import net.minecraft.client.renderer.RenderPipelines;
 import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.TextColor;
+import net.minecraft.resources.Identifier;
+import net.minecraft.util.ARGB;
 import net.minecraft.util.Mth;
 import org.apache.commons.lang3.ArrayUtils;
 
-import static net.minecraft.ChatFormatting.*;
+import java.util.List;
+
+import static net.minecraft.network.chat.TextColor.*;
 
 public class PaletteButton extends Button {
-    private static final int TEX_U = 0;
-
-    private static final int TEX_V = 40;
-
-    private static final int SELECT_U = 28;
-
-    private static final int SELECT_V = 40;
-
-    private static final int COLOR_U = 34;
-
-    private static final int COLOR_V = 40;
+    private static final Identifier PALETTE = FairyLights.id("palette");
+    private static final Identifier SELECT = FairyLights.id("palette_color_select");
+    private static final Identifier COLOR = FairyLights.id("palette_color");
 
     private static final int COLOR_WIDTH = 6;
 
     private static final int COLOR_HEIGHT = 6;
 
-    private static final ChatFormatting[] IDX_COLOR = {WHITE, GRAY, DARK_GRAY, BLACK, RED, DARK_RED, YELLOW, GOLD, LIGHT_PURPLE, DARK_PURPLE, GREEN, DARK_GREEN, BLUE, DARK_BLUE, AQUA, DARK_AQUA};
-
-    private static final int[] COLOR_IDX = FLMth.invertMap(IDX_COLOR, ChatFormatting::ordinal);
+    private static final List<TextColor> IDX_COLOR = List.of(WHITE, GRAY, DARK_GRAY, BLACK, RED, DARK_RED, YELLOW, GOLD, LIGHT_PURPLE, DARK_PURPLE, GREEN, DARK_GREEN, BLUE, DARK_BLUE, AQUA, DARK_AQUA);
 
     private final ColorButton colorBtn;
 
@@ -43,51 +41,41 @@ public class PaletteButton extends Button {
     }
 
     @Override
-    public void onPress() {
-        this.colorBtn.setDisplayColor(IDX_COLOR[(ArrayUtils.indexOf(IDX_COLOR, this.colorBtn.getDisplayColor()) + 1) % IDX_COLOR.length]);
-        super.onPress();
+    public void onPress(InputWithModifiers input) {
+        this.colorBtn.setDisplayColor(IDX_COLOR.get((IDX_COLOR.indexOf(this.colorBtn.getDisplayColor()) + 1) % IDX_COLOR.size()));
+        super.onPress(input);
     }
 
     @Override
-    public void onClick(final double mouseX, final double mouseY) {
-        final int idx = this.getMouseOverIndex(mouseX, mouseY);
+    public void onClick(MouseButtonEvent event, boolean doubleClick) {
+        final int idx = this.getMouseOverIndex(event.x(), event.y());
         if (idx > -1) {
-            this.colorBtn.setDisplayColor(IDX_COLOR[idx]);
-            super.onPress();
+            this.colorBtn.setDisplayColor(IDX_COLOR.get(idx));
+            super.onPress(event);
         }
     }
 
     @Override
-    public void renderWidget(final GuiGraphics stack, final int mouseX, final int mouseY, final float delta) {
+    protected void extractContents(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float a) {
         if (this.visible) {
-            RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
-            stack.blit(EditLetteredConnectionScreen.WIDGETS_TEXTURE, this.getX(), this.getY(), TEX_U, TEX_V, this.width, this.height);
+            graphics.blitSprite(RenderPipelines.GUI_TEXTURED, PALETTE, this.getX(), this.getY(), this.width, this.height);
             if (this.colorBtn.hasDisplayColor()) {
-                final int idx = COLOR_IDX[this.colorBtn.getDisplayColor().ordinal()];
+                final int idx = IDX_COLOR.indexOf(this.colorBtn.getDisplayColor());
                 final int selectX = this.getX() + 2 + (idx % 4) * 6;
                 final int selectY = this.getY() + 2 + (idx / 4) * 6;
-                stack.blit(EditLetteredConnectionScreen.WIDGETS_TEXTURE, selectX, selectY, SELECT_U, SELECT_V, COLOR_WIDTH, COLOR_HEIGHT);
+                graphics.blitSprite(RenderPipelines.GUI_TEXTURED, SELECT, selectX, selectY, COLOR_WIDTH, COLOR_HEIGHT);
             }
-            for (int i = 0; i < IDX_COLOR.length; i++) {
-                final ChatFormatting color = IDX_COLOR[i];
-                final int rgb = StyledString.getColor(color);
-                final float r = (rgb >> 16 & 0xFF) / 255F;
-                final float g = (rgb >> 8 & 0xFF) / 255F;
-                final float b = (rgb & 0xFF) / 255F;
-                RenderSystem.setShaderColor(r, g, b, 1.0F);
-                stack.blit(EditLetteredConnectionScreen.WIDGETS_TEXTURE, this.getX() + 2 + (i % 4) * 6, this.getY() + 2 + i / 4 * 6, COLOR_U, COLOR_V, COLOR_WIDTH, COLOR_HEIGHT);
+            for (int i = 0; i < IDX_COLOR.size(); i++) {
+                final TextColor color = IDX_COLOR.get(i);
+                final int rgb = ARGB.opaque(color.getValue());
+                graphics.blitSprite(RenderPipelines.GUI_TEXTURED, COLOR, this.getX() + 2 + (i % 4) * 6, this.getY() + 2 + i / 4 * 6, COLOR_WIDTH, COLOR_HEIGHT, rgb);
             }
             final int selectIndex = this.getMouseOverIndex(mouseX, mouseY);
             if (selectIndex > -1) {
-                RenderSystem.enableBlend();
-                RenderSystem.blendFunc(GlStateManager.SourceFactor.SRC_ALPHA, GlStateManager.DestFactor.ONE_MINUS_SRC_ALPHA);
-                RenderSystem.setShaderColor(1, 1, 1, 0.5F);
                 final int hoverSelectX = this.getX() + 2 + selectIndex % 4 * 6;
                 final int hoverSelectY = this.getY() + 2 + selectIndex / 4 * 6;
-                stack.blit(EditLetteredConnectionScreen.WIDGETS_TEXTURE, hoverSelectX, hoverSelectY, SELECT_U, SELECT_V, COLOR_WIDTH, COLOR_HEIGHT);
-                RenderSystem.disableBlend();
+                graphics.blitSprite(FLRenderPipelines.GUI_TEXTURED_HIGHLIGHT, SELECT, hoverSelectX, hoverSelectY, COLOR_WIDTH, COLOR_HEIGHT, ARGB.colorFromFloat(0.5f, 1f, 1f, 1f));
             }
-            RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
         }
     }
 

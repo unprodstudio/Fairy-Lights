@@ -1,12 +1,14 @@
 package me.paulf.fairylights.client;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
 import dev.architectury.event.events.client.ClientGuiEvent;
-import fuzs.forgeconfigapiport.fabric.api.forge.v4.ForgeConfigRegistry;
-import io.github.fabricators_of_create.porting_lib.event.client.ColorHandlersCallback;
+import fuzs.forgeconfigapiport.fabric.api.v5.ConfigRegistry;
 import me.paulf.fairylights.FairyLights;
+import me.paulf.fairylights.client.color.*;
 import me.paulf.fairylights.client.command.JinglerCommand;
 import me.paulf.fairylights.client.model.light.*;
+import me.paulf.fairylights.client.renderer.FLRenderPipelines;
 import me.paulf.fairylights.client.renderer.block.entity.*;
 import me.paulf.fairylights.client.renderer.entity.FenceFastenerRenderer;
 import me.paulf.fairylights.client.tutorial.ClippyController;
@@ -21,37 +23,29 @@ import me.paulf.fairylights.server.net.clientbound.JingleMessage;
 import me.paulf.fairylights.server.net.clientbound.OpenEditLetteredConnectionScreenMessage;
 import me.paulf.fairylights.server.net.clientbound.UpdateEntityFastenerMessage;
 import me.paulf.fairylights.server.string.StringTypes;
-import me.paulf.fairylights.util.styledstring.StyledString;
 import net.fabricmc.fabric.api.client.model.loading.v1.ModelLoadingPlugin;
+import net.fabricmc.fabric.api.client.model.loading.v1.SimpleUnbakedExtraModel;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
-import net.fabricmc.fabric.api.client.rendering.v1.EntityModelLayerRegistry;
-import net.fabricmc.fabric.api.client.rendering.v1.EntityRendererRegistry;
+import net.fabricmc.fabric.api.client.rendering.v1.ColorResolverRegistry;
+import net.fabricmc.fabric.api.client.rendering.v1.ModelLayerRegistry;
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
 import net.minecraft.ChatFormatting;
-import net.minecraft.Util;
+import net.minecraft.client.color.item.ItemTintSources;
+import net.minecraft.client.renderer.block.dispatch.BlockStateModel;
+import net.minecraft.client.renderer.entity.EntityRenderers;
+import net.minecraft.client.resources.model.sprite.Material;
+import net.minecraft.util.Util;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.renderer.block.model.BakedQuad;
 import net.minecraft.client.renderer.blockentity.BlockEntityRenderers;
-import net.minecraft.client.renderer.texture.TextureAtlas;
 import net.minecraft.client.renderer.texture.TextureAtlasSprite;
-import net.minecraft.client.resources.model.BakedModel;
-import net.minecraft.client.resources.model.Material;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.item.ItemStack;
 import net.neoforged.fml.config.ModConfig;
 
 public final class ClientProxy extends ServerProxy {
-    @SuppressWarnings("deprecation")
-    public static final Material SOLID_TEXTURE = new Material(TextureAtlas.LOCATION_BLOCKS, ResourceLocation.fromNamespaceAndPath(FairyLights.ID, "entity/connections"));
-
-    @SuppressWarnings("deprecation")
-    public static final Material TRANSLUCENT_TEXTURE = new Material(TextureAtlas.LOCATION_BLOCKS, ResourceLocation.fromNamespaceAndPath(FairyLights.ID, "entity/connections"));
-
-    private final ImmutableList<ResourceLocation> entityModels = new ImmutableList.Builder<ResourceLocation>()
-        .addAll(PennantBuntingRenderer.MODELS)
-        .addAll(LetterBuntingRenderer.MODELS.values())
-        .build();
+    public static final Identifier SOLID_TEXTURE = FairyLights.id("entity/connections");
+    public static final Identifier TRANSLUCENT_TEXTURE = FairyLights.id("entity/connections");
 
     @Override
     public void init() {
@@ -61,7 +55,7 @@ public final class ClientProxy extends ServerProxy {
 
         super.init();
         new ClippyController().init();
-        ForgeConfigRegistry.INSTANCE.register(FairyLights.ID, ModConfig.Type.CLIENT, FLClientConfig.SPEC);
+        ConfigRegistry.INSTANCE.register(FairyLights.ID, ModConfig.Type.CLIENT, FLClientConfig.SPEC);
         ClientEventHandler clientEventHandler = new ClientEventHandler();
         ClientGuiEvent.RENDER_HUD.register((guiGraphics, deltaTracker) -> {
             var mc = Minecraft.getInstance();
@@ -71,6 +65,7 @@ public final class ClientProxy extends ServerProxy {
             JinglerCommand.register(dispatcher);
         });
         JinglerCommand.register();
+        FLRenderPipelines.init();
  
         setup();
         setupLayerDefinitions();
@@ -92,32 +87,10 @@ public final class ClientProxy extends ServerProxy {
         return -1;
     }*/
 
-    private void recomputeUv(final int stride, final int finalUvOffset, final BakedModel model) {
-        final TextureAtlasSprite sprite = model.getParticleIcon();
-        float uMin = sprite.getU0();
-        float uMax = sprite.getU1();
-        float vMin = sprite.getV0();
-        float vMax = sprite.getV1();
-        float uSize = uMax - uMin;
-        float vSize = vMax - vMin;
-
-        final int w = (int) (uSize / (sprite.getU1() - sprite.getU0()));
-        final int h = (int) (vSize / (sprite.getV1() - sprite.getV0()));
-        for (final BakedQuad quad : model.getQuads(null, null, RandomSource.create(42L))) {
-            final int[] data = quad.getVertices();
-            for (int n = 0; n < 4; n++) {
-                int iu = n * stride + finalUvOffset;
-                int iv = n * stride + finalUvOffset + 1;
-                data[iu] = Float.floatToIntBits((float) Math.round(Float.intBitsToFloat(data[iu]) * w) / w);
-                data[iv] = Float.floatToIntBits((float) Math.round(Float.intBitsToFloat(data[iv]) * h) / h);
-            }
-        }
-    }
-
     private void setup() {
         BlockEntityRenderers.register(FLBlockEntities.FASTENER.get(), context -> new FastenerBlockEntityRenderer(context, ServerProxy.buildBlockView()));
         BlockEntityRenderers.register(FLBlockEntities.LIGHT.get(), LightBlockEntityRenderer::new);
-        EntityRendererRegistry.register(FLEntities.FASTENER.get(), FenceFastenerRenderer::new);
+        EntityRenderers.register(FLEntities.FASTENER.get(), FenceFastenerRenderer::new);
         /*final LightRenderer r = new LightRenderer();
         final StringBuilder bob = new StringBuilder();
         FLItems.lights().forEach(l -> {
@@ -129,139 +102,60 @@ public final class ClientProxy extends ServerProxy {
     }
 
     private void setupLayerDefinitions() {
-        EntityModelLayerRegistry.registerModelLayer(FLModelLayers.BOW, BowModel::createLayer);
-        EntityModelLayerRegistry.registerModelLayer(FLModelLayers.GARLAND_RINGS, GarlandVineRenderer.RingsModel::createLayer);
-        EntityModelLayerRegistry.registerModelLayer(FLModelLayers.TINSEL_STRIP, GarlandTinselRenderer.StripModel::createLayer);
-        EntityModelLayerRegistry.registerModelLayer(FLModelLayers.FAIRY_LIGHT, FairyLightModel::createLayer);
-        EntityModelLayerRegistry.registerModelLayer(FLModelLayers.PAPER_LANTERN, PaperLanternModel::createLayer);
-        EntityModelLayerRegistry.registerModelLayer(FLModelLayers.ORB_LANTERN, OrbLanternModel::createLayer);
-        EntityModelLayerRegistry.registerModelLayer(FLModelLayers.FLOWER_LIGHT, FlowerLightModel::createLayer);
-        EntityModelLayerRegistry.registerModelLayer(FLModelLayers.CANDLE_LANTERN_LIGHT, ColorCandleLanternModel::createLayer);
-        EntityModelLayerRegistry.registerModelLayer(FLModelLayers.OIL_LANTERN_LIGHT, ColorOilLanternModel::createLayer);
-        EntityModelLayerRegistry.registerModelLayer(FLModelLayers.JACK_O_LANTERN, JackOLanternLightModel::createLayer);
-        EntityModelLayerRegistry.registerModelLayer(FLModelLayers.SKULL_LIGHT, SkullLightModel::createLayer);
-        EntityModelLayerRegistry.registerModelLayer(FLModelLayers.GHOST_LIGHT, GhostLightModel::createLayer);
-        EntityModelLayerRegistry.registerModelLayer(FLModelLayers.SPIDER_LIGHT, SpiderLightModel::createLayer);
-        EntityModelLayerRegistry.registerModelLayer(FLModelLayers.WITCH_LIGHT, WitchLightModel::createLayer);
-        EntityModelLayerRegistry.registerModelLayer(FLModelLayers.SNOWFLAKE_LIGHT, SnowflakeLightModel::createLayer);
-        EntityModelLayerRegistry.registerModelLayer(FLModelLayers.HEART_LIGHT, HeartLightModel::createLayer);
-        EntityModelLayerRegistry.registerModelLayer(FLModelLayers.MOON_LIGHT, MoonLightModel::createLayer);
-        EntityModelLayerRegistry.registerModelLayer(FLModelLayers.STAR_LIGHT, StarLightModel::createLayer);
-        EntityModelLayerRegistry.registerModelLayer(FLModelLayers.ICICLE_LIGHTS_1, () -> IcicleLightsModel.createLayer(1));
-        EntityModelLayerRegistry.registerModelLayer(FLModelLayers.ICICLE_LIGHTS_2, () -> IcicleLightsModel.createLayer(2));
-        EntityModelLayerRegistry.registerModelLayer(FLModelLayers.ICICLE_LIGHTS_3, () -> IcicleLightsModel.createLayer(3));
-        EntityModelLayerRegistry.registerModelLayer(FLModelLayers.ICICLE_LIGHTS_4, () -> IcicleLightsModel.createLayer(4));
-        EntityModelLayerRegistry.registerModelLayer(FLModelLayers.METEOR_LIGHT, MeteorLightModel::createLayer);
-        EntityModelLayerRegistry.registerModelLayer(FLModelLayers.OIL_LANTERN, OilLanternModel::createLayer);
-        EntityModelLayerRegistry.registerModelLayer(FLModelLayers.CANDLE_LANTERN, CandleLanternModel::createLayer);
-        EntityModelLayerRegistry.registerModelLayer(FLModelLayers.INCANDESCENT_LIGHT, IncandescentLightModel::createLayer);
-        EntityModelLayerRegistry.registerModelLayer(FLModelLayers.LETTER_WIRE, LetterBuntingRenderer::wireLayer);
-        EntityModelLayerRegistry.registerModelLayer(FLModelLayers.PENNANT_WIRE, PennantBuntingRenderer::wireLayer);
-        EntityModelLayerRegistry.registerModelLayer(FLModelLayers.TINSEL_WIRE, GarlandTinselRenderer::wireLayer);
-        EntityModelLayerRegistry.registerModelLayer(FLModelLayers.VINE_WIRE, GarlandVineRenderer::wireLayer);
-        EntityModelLayerRegistry.registerModelLayer(FLModelLayers.LIGHTS_WIRE, HangingLightsRenderer::wireLayer);
+        ModelLayerRegistry.registerModelLayer(FLModelLayers.BOW, BowModel::createLayer);
+        ModelLayerRegistry.registerModelLayer(FLModelLayers.GARLAND_RINGS, GarlandVineRenderer.RingsModel::createLayer);
+        ModelLayerRegistry.registerModelLayer(FLModelLayers.TINSEL_STRIP, GarlandTinselRenderer.StripModel::createLayer);
+        ModelLayerRegistry.registerModelLayer(FLModelLayers.FAIRY_LIGHT, FairyLightModel::createLayer);
+        ModelLayerRegistry.registerModelLayer(FLModelLayers.PAPER_LANTERN, PaperLanternModel::createLayer);
+        ModelLayerRegistry.registerModelLayer(FLModelLayers.ORB_LANTERN, OrbLanternModel::createLayer);
+        ModelLayerRegistry.registerModelLayer(FLModelLayers.FLOWER_LIGHT, FlowerLightModel::createLayer);
+        ModelLayerRegistry.registerModelLayer(FLModelLayers.CANDLE_LANTERN_LIGHT, ColorCandleLanternModel::createLayer);
+        ModelLayerRegistry.registerModelLayer(FLModelLayers.OIL_LANTERN_LIGHT, ColorOilLanternModel::createLayer);
+        ModelLayerRegistry.registerModelLayer(FLModelLayers.JACK_O_LANTERN, JackOLanternLightModel::createLayer);
+        ModelLayerRegistry.registerModelLayer(FLModelLayers.SKULL_LIGHT, SkullLightModel::createLayer);
+        ModelLayerRegistry.registerModelLayer(FLModelLayers.GHOST_LIGHT, GhostLightModel::createLayer);
+        ModelLayerRegistry.registerModelLayer(FLModelLayers.SPIDER_LIGHT, SpiderLightModel::createLayer);
+        ModelLayerRegistry.registerModelLayer(FLModelLayers.WITCH_LIGHT, WitchLightModel::createLayer);
+        ModelLayerRegistry.registerModelLayer(FLModelLayers.SNOWFLAKE_LIGHT, SnowflakeLightModel::createLayer);
+        ModelLayerRegistry.registerModelLayer(FLModelLayers.HEART_LIGHT, HeartLightModel::createLayer);
+        ModelLayerRegistry.registerModelLayer(FLModelLayers.MOON_LIGHT, MoonLightModel::createLayer);
+        ModelLayerRegistry.registerModelLayer(FLModelLayers.STAR_LIGHT, StarLightModel::createLayer);
+        ModelLayerRegistry.registerModelLayer(FLModelLayers.ICICLE_LIGHTS_1, () -> IcicleLightsModel.createLayer(1));
+        ModelLayerRegistry.registerModelLayer(FLModelLayers.ICICLE_LIGHTS_2, () -> IcicleLightsModel.createLayer(2));
+        ModelLayerRegistry.registerModelLayer(FLModelLayers.ICICLE_LIGHTS_3, () -> IcicleLightsModel.createLayer(3));
+        ModelLayerRegistry.registerModelLayer(FLModelLayers.ICICLE_LIGHTS_4, () -> IcicleLightsModel.createLayer(4));
+        ModelLayerRegistry.registerModelLayer(FLModelLayers.METEOR_LIGHT, MeteorLightModel::createLayer);
+        ModelLayerRegistry.registerModelLayer(FLModelLayers.OIL_LANTERN, OilLanternModel::createLayer);
+        ModelLayerRegistry.registerModelLayer(FLModelLayers.CANDLE_LANTERN, CandleLanternModel::createLayer);
+        ModelLayerRegistry.registerModelLayer(FLModelLayers.INCANDESCENT_LIGHT, IncandescentLightModel::createLayer);
+        ModelLayerRegistry.registerModelLayer(FLModelLayers.LETTER_WIRE, LetterBuntingRenderer::wireLayer);
+        ModelLayerRegistry.registerModelLayer(FLModelLayers.PENNANT_WIRE, PennantBuntingRenderer::wireLayer);
+        ModelLayerRegistry.registerModelLayer(FLModelLayers.TINSEL_WIRE, GarlandTinselRenderer::wireLayer);
+        ModelLayerRegistry.registerModelLayer(FLModelLayers.VINE_WIRE, GarlandVineRenderer::wireLayer);
+        ModelLayerRegistry.registerModelLayer(FLModelLayers.LIGHTS_WIRE, HangingLightsRenderer::wireLayer);
     }
 
     private void setupModels() {
         ModelLoadingPlugin.register(context -> {
-            context.addModels(FenceFastenerRenderer.MODEL);
-            context.addModels(this.entityModels);
+            context.addModel(FenceFastenerRenderer.MODEL_KEY, SimpleUnbakedExtraModel.blockStateModel(FenceFastenerRenderer.MODEL));
+
+            context.addModel(PennantBuntingRenderer.TRIANGLE_MODEL_KEY, SimpleUnbakedExtraModel.blockStateModel(PennantBuntingRenderer.TRIANGLE_MODEL));
+            context.addModel(PennantBuntingRenderer.SPEARHEAD_MODEL_KEY, SimpleUnbakedExtraModel.blockStateModel(PennantBuntingRenderer.SPEARHEAD_MODEL));
+            context.addModel(PennantBuntingRenderer.SWALLOWTAIL_MODEL_KEY, SimpleUnbakedExtraModel.blockStateModel(PennantBuntingRenderer.SWALLOWTAIL_MODEL));
+            context.addModel(PennantBuntingRenderer.SQUARE_MODEL_KEY, SimpleUnbakedExtraModel.blockStateModel(PennantBuntingRenderer.SQUARE_MODEL));
+
+            LetterBuntingRenderer.MODEL_KEYS.forEach((k, key) -> {
+                Identifier id = LetterBuntingRenderer.MODELS.get(k);
+                context.addModel(key, SimpleUnbakedExtraModel.blockStateModel(id));
+            });
         });
     }
 
     private void setupColors() {
-        ColorHandlersCallback.ITEM.register((event, blockColors) -> {
-            event.register((stack, index) -> {
-                    if (index == 1) {
-                        if (ColorChangingBehavior.exists(stack)) {
-                            return ColorChangingBehavior.animate(stack);
-                        }
-                        return DyeableItem.getColor(stack);
-                    }
-                    return 0xFFFFFFFF;
-                },
-                FLItems.FAIRY_LIGHT.get(),
-                FLItems.PAPER_LANTERN.get(),
-                FLItems.ORB_LANTERN.get(),
-                FLItems.FLOWER_LIGHT.get(),
-                FLItems.CANDLE_LANTERN_LIGHT.get(),
-                FLItems.OIL_LANTERN_LIGHT.get(),
-                FLItems.JACK_O_LANTERN.get(),
-                FLItems.SKULL_LIGHT.get(),
-                FLItems.GHOST_LIGHT.get(),
-                FLItems.SPIDER_LIGHT.get(),
-                FLItems.WITCH_LIGHT.get(),
-                FLItems.SNOWFLAKE_LIGHT.get(),
-                FLItems.HEART_LIGHT.get(),
-                FLItems.MOON_LIGHT.get(),
-                FLItems.STAR_LIGHT.get(),
-                FLItems.ICICLE_LIGHTS.get(),
-                FLItems.METEOR_LIGHT.get()
-            );
-            event.register((stack, index) -> {
-                if (index == 0) {
-                    if (stack.has(FLComponents.STRING_TYPE)) {
-                        return 0xFF000000 | stack.get(FLComponents.STRING_TYPE).getColor();
-                    }
-                    return 0xFF000000 | StringTypes.BLACK_STRING.get().getColor();
-                }
-                if (stack.has(FLComponents.PATTERN)) {
-                    var pattern = stack.get(FLComponents.PATTERN);
-                    if (!pattern.isEmpty()) {
-                        var item = pattern.get((index - 1) % pattern.size());
-                        if (ColorChangingBehavior.exists(item)) {
-                            return ColorChangingBehavior.animate(item);
-                        }
-                        return DyeableItem.getColor(item);
-                    }
-                }
-                if (FairyLights.CHRISTMAS.isOccurringNow()) {
-                    return (index + Util.getMillis() / 2000) % 2 == 0 ? 0xFF993333 : 0xFF7FCC19;
-                }
-                if (FairyLights.HALLOWEEN.isOccurringNow()) {
-                    return index % 2 == 0 ? 0xFFf9801d : 0xFF8932b8;
-                }
-                return 0xFFFFD584;
-            }, FLItems.HANGING_LIGHTS.get());
-            event.register((stack, index) -> index == 0 ? DyeableItem.getColor(stack) : 0xFFFFFFFF, FLItems.TINSEL.get());
-            event.register((stack, index) -> {
-                if (index == 0) {
-                    return 0xFFFFFFFF;
-                }
-                if (stack.has(FLComponents.PATTERN)) {
-                    var pattern = stack.get(FLComponents.PATTERN);
-                    if (!pattern.isEmpty()) {
-                        var light = pattern.get((index - 1) % pattern.size());
-                        return DyeableItem.getColor(light);
-                    }
-                }
-                return 0xFFFFFFFF;
-            }, FLItems.PENNANT_BUNTING.get());
-            event.register(ClientProxy::secondLayerColor, FLItems.TRIANGLE_PENNANT.get());
-            event.register(ClientProxy::secondLayerColor, FLItems.SPEARHEAD_PENNANT.get());
-            event.register(ClientProxy::secondLayerColor, FLItems.SWALLOWTAIL_PENNANT.get());
-            event.register(ClientProxy::secondLayerColor, FLItems.SQUARE_PENNANT.get());
-            event.register((stack, index) -> {
-                if (index > 0 && stack.has(FLComponents.STYLED_STRING)) {
-                    final StyledString str = stack.get(FLComponents.STYLED_STRING);
-                    if (str.length() > 0) {
-                        ChatFormatting lastColor = null, color = null;
-                        int n = (index - 1) % str.length();
-                        for (int i = 0; i < str.length(); lastColor = color, i++) {
-                            color = str.styleAt(i).getColor();
-                            if (lastColor != color && (n-- == 0)) {
-                                break;
-                            }
-                        }
-                        return StyledString.getColor(color) | 0xFF000000;
-                    }
-                }
-                return 0xFFFFFFFF;
-            }, FLItems.LETTER_BUNTING.get());
-        });
-    }
-
-    private static int secondLayerColor(final ItemStack stack, final int index) {
-        return index == 0 ? 0xFFFFFF : DyeableItem.getColor(stack);
+        ItemTintSources.ID_MAPPER.put(FairyLights.id("color_changing"), ColorChangingItemTintSource.CODEC);
+        ItemTintSources.ID_MAPPER.put(FairyLights.id("string_type"), StringTypeBasedItemTintSource.CODEC);
+        ItemTintSources.ID_MAPPER.put(FairyLights.id("pattern_or_default"), PatternOrDefaultItemTintSource.CODEC);
+        ItemTintSources.ID_MAPPER.put(FairyLights.id("pattern"), PatternItemTintSource.CODEC);
+        ItemTintSources.ID_MAPPER.put(FairyLights.id("styled_string"), StyledStringItemTintSource.CODEC);
     }
 }

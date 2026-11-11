@@ -9,11 +9,13 @@ import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.network.codec.ByteBufCodecs;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
+import net.minecraft.util.ProblemReporter;
 import net.minecraft.world.entity.Entity;
+import net.minecraft.world.level.storage.TagValueInput;
 
 public final class UpdateEntityFastenerMessage implements Message {
-    public static final Type<UpdateEntityFastenerMessage> TYPE = new Type(ResourceLocation.fromNamespaceAndPath(FairyLights.ID, "update_entity_fastener"));
+    public static final Type<UpdateEntityFastenerMessage> TYPE = new Type(FairyLights.id("update_entity_fastener"));
 
     @Override
     public Type<? extends CustomPacketPayload> type() {
@@ -45,7 +47,7 @@ public final class UpdateEntityFastenerMessage implements Message {
         public void receive(final UpdateEntityFastenerMessage message, final ClientPlayNetworking.Context context) {
             final Entity entity = context.client().level.getEntity(message.entityId);
             if (entity != null) {
-                CapabilityHandler.FASTENER_CAP.maybeGet(entity).ifPresent(f -> f.deserializeNBT(message.compound, context.player().registryAccess()));
+                CapabilityHandler.FASTENER_CAP.maybeGet(entity).ifPresent(f -> f.deserializeNBT(TagValueInput.create(ProblemReporter.DISCARDING, context.player().registryAccess(), message.compound)));
             }
         }
     }

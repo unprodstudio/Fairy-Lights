@@ -1,8 +1,5 @@
 package me.paulf.fairylights.server.entity;
 
-import io.github.fabricators_of_create.porting_lib.entity.IEntityWithComplexSpawn;
-import io.netty.buffer.ByteBufInputStream;
-import io.netty.buffer.ByteBufOutputStream;
 import me.paulf.fairylights.server.ServerProxy;
 import me.paulf.fairylights.server.block.FLBlocks;
 import me.paulf.fairylights.server.capability.CapabilityHandler;
@@ -12,14 +9,15 @@ import me.paulf.fairylights.server.net.clientbound.UpdateEntityFastenerMessage;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.nbt.CompoundTag;
-import net.minecraft.nbt.NbtAccounter;
-import net.minecraft.nbt.NbtIo;
-import net.minecraft.nbt.NbtUtils;
 import net.minecraft.network.RegistryFriendlyByteBuf;
+import net.minecraft.network.syncher.EntityDataAccessor;
+import net.minecraft.network.syncher.EntityDataSerializer;
 import net.minecraft.network.syncher.SynchedEntityData;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.tags.DamageTypeTags;
 import net.minecraft.util.Mth;
+import net.minecraft.util.ProblemReporter;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.damagesource.DamageSource;
@@ -29,16 +27,23 @@ import net.minecraft.world.entity.decoration.BlockAttachedEntity;
 import net.minecraft.world.entity.decoration.HangingEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.component.SwingAnimation;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.SoundType;
+import net.minecraft.world.level.storage.TagValueInput;
+import net.minecraft.world.level.storage.TagValueOutput;
+import net.minecraft.world.level.storage.ValueInput;
+import net.minecraft.world.level.storage.ValueOutput;
 import net.minecraft.world.phys.AABB;
-import org.jetbrains.annotations.Nullable;
+import net.minecraft.world.phys.Vec3;
+import org.jspecify.annotations.Nullable;
 
-import java.io.IOException;
 import java.util.Optional;
 
-public final class FenceFastenerEntity extends HangingEntity implements IEntityWithComplexSpawn {
+public final class FenceFastenerEntity extends HangingEntity {
+    private static final EntityDataAccessor<Optional<CompoundTag>> FASTENER = SynchedEntityData.defineId(FenceFastenerEntity.class, FLEntityDataSerializers.COMPOUND_TAG);
+
     private int surfaceCheckTime;
 
     public FenceFastenerEntity(final EntityType<? extends FenceFastenerEntity> type, final Level world) {
@@ -76,6 +81,7 @@ public final class FenceFastenerEntity extends HangingEntity implements IEntityW
 
     @Override
     protected void defineSynchedData(SynchedEntityData.Builder builder) {
+        builder.define(FASTENER, Optional.empty());
     }
 
     @Override
@@ -84,32 +90,26 @@ public final class FenceFastenerEntity extends HangingEntity implements IEntityW
         super.remove(reason);
     }
 
-    @Override
     public boolean isInvulnerableTo(DamageSource source) {
-        return super.isInvulnerableTo(source) || source.is(DamageTypeTags.IS_EXPLOSION);
+        return super.isInvulnerableToBase(source) || source.is(DamageTypeTags.IS_EXPLOSION);
     }
 
     // Copy from super but remove() moved to after onBroken()
     @Override
-    public boolean hurt(final DamageSource source, final float amount) {
+    public boolean hurtServer(ServerLevel level, final DamageSource source, final float amount) {
         if (this.isInvulnerableTo(source)) {
             return false;
         }
         if (!this.level().isClientSide() && this.isAlive()) {
             this.markHurt();
-            this.dropItem(source.getEntity());
+            this.dropItem(level, source.getEntity());
             this.remove(RemovalReason.KILLED);
         }
         return true;
     }
 
     @Override
-    public boolean canChangeDimensions(Level oldLevel, Level newLevel) {
-        return false;
-    }
-
-    @Override
-    public void dropItem(@Nullable final Entity breaker) {
+    public void dropItem(ServerLevel level, @Nullable final Entity breaker) {
         this.getFastener().ifPresent(fastener -> fastener.dropItems(this.level(), this.pos));
         if (breaker != null) {
             this.level().levelEvent(2001, this.pos, Block.getId(FLBlocks.FASTENER.get().defaultBlockState()));
@@ -146,19 +146,22 @@ public final class FenceFastenerEntity extends HangingEntity implements IEntityW
         return new AABB(posX - w, posY - h, posZ - w, posX + w, posY + h, posZ + w);
     }
 
-    @Override
-    public AABB getBoundingBoxForCulling() {
-        return this.getFastener().map(fastener -> fastener.getBounds().inflate(1)).orElseGet(super::getBoundingBoxForCulling);
-    }
+    // FIXME 26.3
+//    @Override
+//    public AABB getBoundingBoxForCulling() {
+//        return this.getFastener().map(fastener -> fastener.getBounds().inflate(1)).orElseGet(super::getBoundingBoxForCulling);
+//    }
 
     @Override
     public void tick() {
         this.getFastener().ifPresent(fastener -> {
             if (!this.level().isClientSide() && (fastener.hasNoConnections() || this.checkSurface())) {
-                this.dropItem(null);
+                this.dropItem((ServerLevel) this.level(), null);
                 this.remove(RemovalReason.DISCARDED);
             } else if (fastener.update() && !this.level().isClientSide()) {
-                final UpdateEntityFastenerMessage msg = new UpdateEntityFastenerMessage(this, fastener.serializeNBT(this.registryAccess()));
+                TagValueOutput output = TagValueOutput.createWithContext(ProblemReporter.DISCARDING, this.registryAccess());
+                fastener.serializeNBT(output);
+                final UpdateEntityFastenerMessage msg = new UpdateEntityFastenerMessage(this, output.buildResult());
                 ServerProxy.sendToPlayersWatchingEntity(msg, this);
             }
         });
@@ -173,49 +176,27 @@ public final class FenceFastenerEntity extends HangingEntity implements IEntityW
     }
 
     @Override
-    public InteractionResult interact(final Player player, final InteractionHand hand) {
+    public InteractionResult interact(final Player player, final InteractionHand hand, Vec3 location) {
         final ItemStack stack = player.getItemInHand(hand);
         if (stack.getItem() instanceof ConnectionItem) {
             if (this.level().isClientSide()) {
-                player.swing(hand);
+                player.swing(hand, SwingAnimation.DEFAULT, false);
             } else {
                 this.getFastener().ifPresent(fastener -> ((ConnectionItem) stack.getItem()).connect(stack, player, this.level(), fastener));
             }
             return InteractionResult.SUCCESS;
         }
-        return super.interact(player, hand);
+        return super.interact(player, hand, location);
     }
 
     @Override
-    public void addAdditionalSaveData(final CompoundTag compound) {
-        compound.put("pos", NbtUtils.writeBlockPos(this.pos));
+    protected void addAdditionalSaveData(ValueOutput output) {
+        output.store("pos", BlockPos.CODEC, this.pos);
     }
 
     @Override
-    public void readAdditionalSaveData(final CompoundTag compound) {
-        this.pos = NbtUtils.readBlockPos(compound, "pos").orElseThrow();
-    }
-
-    @Override
-    public void writeSpawnData(final RegistryFriendlyByteBuf buf) {
-        this.getFastener().ifPresent(fastener -> {
-            try {
-                NbtIo.write(fastener.serializeNBT(this.registryAccess()), new ByteBufOutputStream(buf));
-            } catch (final IOException e) {
-                throw new RuntimeException(e);
-            }
-        });
-    }
-
-    @Override
-    public void readSpawnData(final RegistryFriendlyByteBuf buf) {
-        this.getFastener().ifPresent(fastener -> {
-            try {
-                fastener.deserializeNBT(NbtIo.read(new ByteBufInputStream(buf), NbtAccounter.create(0x200000)), this.level().registryAccess());
-            } catch (final IOException e) {
-                throw new RuntimeException(e);
-            }
-        });
+    protected void readAdditionalSaveData(ValueInput input) {
+        this.pos = input.read("pos", BlockPos.CODEC).orElseThrow();
     }
 
     /*@Override

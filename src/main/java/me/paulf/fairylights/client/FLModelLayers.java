@@ -2,7 +2,7 @@ package me.paulf.fairylights.client;
 
 import me.paulf.fairylights.FairyLights;
 import net.minecraft.client.model.geom.ModelLayerLocation;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 
 public class FLModelLayers {
 
@@ -43,6 +43,6 @@ public class FLModelLayers {
     }
 
     private static ModelLayerLocation layer(String name, String layer) {
-        return new ModelLayerLocation(ResourceLocation.fromNamespaceAndPath(FairyLights.ID, name), layer);
+        return new ModelLayerLocation(FairyLights.id(name), layer);
     }
 }

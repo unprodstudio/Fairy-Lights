@@ -4,50 +4,55 @@ import com.google.common.base.MoreObjects;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.mojang.blaze3d.vertex.PoseStack;
-import com.mojang.blaze3d.vertex.VertexConsumer;
 import com.mojang.math.Axis;
 import me.paulf.fairylights.FairyLights;
 import me.paulf.fairylights.client.FLModelLayers;
+import me.paulf.fairylights.client.renderer.block.entity.state.connection.PennantBuntingConnectionRenderState;
 import me.paulf.fairylights.server.connection.PennantBuntingConnection;
 import me.paulf.fairylights.server.feature.Pennant;
 import me.paulf.fairylights.server.item.FLItems;
 import me.paulf.fairylights.util.Curve;
-import me.paulf.fairylights.util.styledstring.Style;
-import me.paulf.fairylights.util.styledstring.StyledString;
+import me.paulf.fairylights.util.Utils;
+import net.fabricmc.fabric.api.client.model.loading.v1.ExtraModelKey;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.model.geom.ModelLayerLocation;
 import net.minecraft.client.model.geom.ModelPart;
 import net.minecraft.client.model.geom.builders.LayerDefinition;
-import net.minecraft.client.renderer.MultiBufferSource;
-import net.minecraft.client.renderer.Sheets;
-import net.minecraft.client.resources.model.BakedModel;
-import net.minecraft.resources.ResourceLocation;
-import net.minecraft.util.FastColor;
+import net.minecraft.client.renderer.SubmitNodeCollector;
+import net.minecraft.client.renderer.block.dispatch.BlockStateModel;
+import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.Style;
+import net.minecraft.resources.Identifier;
+import net.minecraft.util.RandomSource;
+import net.minecraft.util.Util;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.phys.Vec3;
 import org.joml.Matrix3f;
+import org.joml.Matrix4f;
 import org.joml.Vector3f;
 
 import java.util.function.Function;
 
-public class PennantBuntingRenderer extends ConnectionRenderer<PennantBuntingConnection> {
-    private static final ResourceLocation TRIANGLE_MODEL = ResourceLocation.fromNamespaceAndPath(FairyLights.ID, "entity/triangle_pennant");
+public class PennantBuntingRenderer extends ConnectionRenderer<PennantBuntingConnection, PennantBuntingConnectionRenderState> {
+    public static final Identifier TRIANGLE_MODEL = FairyLights.id("entity/triangle_pennant");
+    public static final Identifier SPEARHEAD_MODEL = FairyLights.id("entity/spearhead_pennant");
+    public static final Identifier SWALLOWTAIL_MODEL = FairyLights.id("entity/swallowtail_pennant");
+    public static final Identifier SQUARE_MODEL = FairyLights.id("entity/square_pennant");
 
-    private static final ResourceLocation SPEARHEAD_MODEL = ResourceLocation.fromNamespaceAndPath(FairyLights.ID, "entity/spearhead_pennant");
+    public static final ExtraModelKey<BlockStateModel> TRIANGLE_MODEL_KEY = ExtraModelKey.create();
+    public static final ExtraModelKey<BlockStateModel> SPEARHEAD_MODEL_KEY = ExtraModelKey.create();
+    public static final ExtraModelKey<BlockStateModel> SWALLOWTAIL_MODEL_KEY = ExtraModelKey.create();
+    public static final ExtraModelKey<BlockStateModel> SQUARE_MODEL_KEY = ExtraModelKey.create();
 
-    private static final ResourceLocation SWALLOWTAIL_MODEl = ResourceLocation.fromNamespaceAndPath(FairyLights.ID, "entity/swallowtail_pennant");
+    public static final ImmutableSet<Identifier> MODELS = ImmutableSet.of(TRIANGLE_MODEL, SPEARHEAD_MODEL, SWALLOWTAIL_MODEL, SQUARE_MODEL);
 
-    private static final ResourceLocation SQUARE_MODEL = ResourceLocation.fromNamespaceAndPath(FairyLights.ID, "entity/square_pennant");
-
-    public static final ImmutableSet<ResourceLocation> MODELS = ImmutableSet.of(TRIANGLE_MODEL, SPEARHEAD_MODEL, SWALLOWTAIL_MODEl, SQUARE_MODEL);
-
-    private final ImmutableMap<Item, ResourceLocation> models = ImmutableMap.of(
-        FLItems.TRIANGLE_PENNANT.get(), TRIANGLE_MODEL,
-        FLItems.SPEARHEAD_PENNANT.get(), SPEARHEAD_MODEL,
-        FLItems.SWALLOWTAIL_PENNANT.get(), SWALLOWTAIL_MODEl,
-        FLItems.SQUARE_PENNANT.get(), SQUARE_MODEL
+    private final ImmutableMap<Item, ExtraModelKey<BlockStateModel>> models = ImmutableMap.of(
+        FLItems.TRIANGLE_PENNANT.get(), TRIANGLE_MODEL_KEY,
+        FLItems.SPEARHEAD_PENNANT.get(), SPEARHEAD_MODEL_KEY,
+        FLItems.SWALLOWTAIL_PENNANT.get(), SWALLOWTAIL_MODEL_KEY,
+        FLItems.SQUARE_PENNANT.get(), SQUARE_MODEL_KEY
     );
 
     public PennantBuntingRenderer(final Function<ModelLayerLocation, ModelPart> baker) {
@@ -55,65 +60,84 @@ public class PennantBuntingRenderer extends ConnectionRenderer<PennantBuntingCon
     }
 
     @Override
-    protected void render(final PennantBuntingConnection conn, final Curve catenary, final float delta, final PoseStack matrix, final MultiBufferSource source, final int packedLight, final int packedOverlay) {
-        super.render(conn, catenary, delta, matrix, source, packedLight, packedOverlay);
-        final Pennant[] currLights = conn.getFeatures();
-        if (currLights != null) {
+    public PennantBuntingConnectionRenderState createRenderState() {
+        return new PennantBuntingConnectionRenderState();
+    }
+
+    @Override
+    public void extractRenderState(PennantBuntingConnection conn, PennantBuntingConnectionRenderState state, float delta) {
+        super.extractRenderState(conn, state, delta);
+        for (Pennant pennant : conn.getFeatures()) {
+            var pennantState = new PennantBuntingConnectionRenderState.PennantRenderState();
+            Minecraft.getInstance().getModelManager().getModel(this.models.getOrDefault(pennant.getItem(), TRIANGLE_MODEL_KEY))
+                .collectParts(RandomSource.create(), pennantState.model.setupModel(new Matrix4f(), false));
+
+            pennantState.color = pennant.getColor();
+            pennantState.point = pennant.getPoint(delta);
+            pennantState.yaw = pennant.getYaw(delta);
+            pennantState.pitch = pennant.getPitch(delta);
+            pennantState.roll = pennant.getRoll(delta);
+        }
+
+        state.text = conn.getText();
+
+        int length = state.text.getString().length();
+
+        if (length > state.features.size()) {
+            state.text = Utils.substr(state.text, state.features.size());
+        }
+    }
+
+    @Override
+    protected void submit(final PennantBuntingConnectionRenderState conn, final Curve catenary, final PoseStack matrix, final SubmitNodeCollector collector) {
+        super.submit(conn, catenary, matrix, collector);
+        int count = conn.features.size();
+        if (count > 0) {
             final Font font = Minecraft.getInstance().font;
-            final VertexConsumer buf = source.getBuffer(Sheets.cutoutBlockSheet());
-            final int count = currLights.length;
-            if (count == 0) {
-                return;
-            }
-            StyledString text = conn.getText();
-            if (text.length() > count) {
-                text = text.substring(0, count);
-            }
-            final int offset = (count - text.length()) / 2;
+
+            int length = conn.text.getString().length();
+            final int offset = (count - length) / 2;
             for (int i = 0; i < count; i++) {
-                final Pennant currPennant = currLights[i];
-                final int color = currPennant.getColor();
-                final float r = FastColor.ARGB32.red(color) / 255.0F;
-                final float g = FastColor.ARGB32.green(color) / 255.0F;
-                final float b = FastColor.ARGB32.blue(color) / 255.0F;
-                final BakedModel model = Minecraft.getInstance().getModelManager().getModel(this.models.getOrDefault(currPennant.getItem(), TRIANGLE_MODEL));
-                final Vec3 pos = currPennant.getPoint(delta);
+                final var currPennant = conn.features.get(i);
+                final int color = currPennant.color;
+                final Vec3 pos = currPennant.point;
                 matrix.pushPose();
                 matrix.translate(pos.x, pos.y, pos.z);
-                matrix.mulPose(Axis.YP.rotation(-currPennant.getYaw(delta)));
-                matrix.mulPose(Axis.ZP.rotation(currPennant.getPitch(delta)));
-                matrix.mulPose(Axis.XP.rotation(currPennant.getRoll(delta)));
+                matrix.rotate(Axis.YP.rotation(-currPennant.yaw));
+                matrix.rotate(Axis.ZP.rotation(currPennant.pitch));
+                matrix.rotate(Axis.XP.rotation(currPennant.roll));
                 matrix.pushPose();
-                FastenerRenderer.renderBakedModel(model, matrix, buf, r, g, b, packedLight, packedOverlay);
+                currPennant.model.tintLayers().add(color);
+                currPennant.model.submit(matrix, collector, conn.lightCoords, conn.overlayCoords, 0);
                 matrix.popPose();
-                if (i >= offset && i < offset + text.length()) {
-                    this.drawLetter(matrix, source, currPennant, packedLight, font, text, i - offset, 1, delta);
-                    this.drawLetter(matrix, source, currPennant, packedLight, font, text, text.length() - 1 - (i - offset), -1, delta);
+                if (i >= offset && i < offset + length) {
+                    this.drawLetter(matrix, collector, currPennant, conn.lightCoords, font, conn.text, i - offset, 1);
+                    this.drawLetter(matrix, collector, currPennant, conn.lightCoords, font, conn.text, length - 1 - (i - offset), -1);
                 }
                 matrix.popPose();
             }
         }
     }
 
-    private void drawLetter(final PoseStack matrix, final MultiBufferSource source, final Pennant pennant, final int packedLight, final Font font, final StyledString text, final int index, final int side, final float delta) {
-        final Style style = text.styleAt(index);
+    private void drawLetter(final PoseStack matrix, final SubmitNodeCollector collector, final PennantBuntingConnectionRenderState.PennantRenderState pennant, final int packedLight, final Font font, final Component text, final int index, final int side) {
+        final Style style = Utils.styleAt(text, index);
         final StringBuilder bob = new StringBuilder();
         if (style.isObfuscated()) bob.append(ChatFormatting.OBFUSCATED);
         if (style.isBold()) bob.append(ChatFormatting.BOLD);
         if (style.isStrikethrough()) bob.append(ChatFormatting.STRIKETHROUGH);
-        if (style.isUnderline()) bob.append(ChatFormatting.UNDERLINE);
+        if (style.isUnderlined()) bob.append(ChatFormatting.UNDERLINE);
         if (style.isItalic()) bob.append(ChatFormatting.ITALIC);
-        bob.append(text.charAt(index));
+        bob.append(text.getString().charAt(index));
         final String chr = bob.toString();
         final Matrix3f m = new Matrix3f();
-        m.rotate(Axis.YP.rotation(pennant.getYaw(delta)));
-        m.rotate(Axis.ZP.rotation(pennant.getPitch(delta)));
-        m.rotate(Axis.XP.rotation(pennant.getRoll(delta)));
+        m.rotate(Axis.YP.rotation(pennant.yaw));
+        m.rotate(Axis.ZP.rotation(pennant.pitch));
+        m.rotate(Axis.XP.rotation(pennant.roll));
         final Vector3f v = new Vector3f(0.0F, 0.0F, side);
         m.transform(v);
         // TODO: correct entity diffuse
         final float brightness = diffuseLight(v.x(), v.y(), v.z());
-        final int styleColor = MoreObjects.firstNonNull(style.getColor().getColor(), 0xFFFFFF);
+        final int styleColor = MoreObjects.firstNonNull(style.getColor().getValue(), 0xFFFFFF);
         final int r = (int) ((styleColor >> 16 & 0xFF) * brightness);
         final int g = (int) ((styleColor >> 8 & 0xFF) * brightness);
         final int b = (int) ((styleColor & 0xFF) * brightness);
@@ -123,7 +147,7 @@ public class PennantBuntingRenderer extends ConnectionRenderer<PennantBuntingCon
         final float s = 0.03075F;
         matrix.scale(s * side, -s, s);
         final float w = font.width(chr);
-        font.drawInBatch(chr, -(w - 1.0F) / 2.0F, -4.0F, argb, false, matrix.last().pose(), source, Font.DisplayMode.NORMAL, 0, packedLight);
+        collector.submitText(matrix, -(w - 1.0F) / 2.0F, -4.0F, Component.literal(chr).getVisualOrderText(), false, Font.DisplayMode.NORMAL, packedLight, argb, 0, 0);
         matrix.popPose();
     }
 

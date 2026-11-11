@@ -11,10 +11,10 @@ import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.network.codec.ByteBufCodecs;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 
 public final class JingleMessage extends ConnectionMessage implements CustomPacketPayload {
-    public static final Type<JingleMessage> TYPE = new Type(ResourceLocation.fromNamespaceAndPath(FairyLights.ID, "jingle"));
+    public static final Type<JingleMessage> TYPE = new Type(FairyLights.id("jingle"));
 
     @Override
     public Type<? extends CustomPacketPayload> type() {

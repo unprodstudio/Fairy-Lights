@@ -5,16 +5,17 @@ import me.paulf.fairylights.server.connection.Connection;
 import me.paulf.fairylights.server.connection.Lettered;
 import me.paulf.fairylights.server.net.ConnectionInfo;
 import me.paulf.fairylights.server.net.ConnectionMessage;
-import me.paulf.fairylights.util.styledstring.StyledString;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.minecraft.network.RegistryFriendlyByteBuf;
+import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.ComponentSerialization;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.server.level.ServerPlayer;
 
 public class EditLetteredConnectionMessage<C extends Connection & Lettered> extends ConnectionMessage {
-    public static final Type<EditLetteredConnectionMessage<?>> TYPE = new Type(ResourceLocation.fromNamespaceAndPath(FairyLights.ID, "edit_lettered"));
+    public static final Type<EditLetteredConnectionMessage<?>> TYPE = new Type(FairyLights.id("edit_lettered"));
 
     @Override
     public Type<? extends CustomPacketPayload> type() {
@@ -23,18 +24,18 @@ public class EditLetteredConnectionMessage<C extends Connection & Lettered> exte
 
     public static final StreamCodec<RegistryFriendlyByteBuf, EditLetteredConnectionMessage<?>> CODEC = StreamCodec.composite(
             ConnectionInfo.STREAM_CODEC, ConnectionMessage::getData,
-            StyledString.STREAM_CODEC, msg -> msg.text,
+            ComponentSerialization.STREAM_CODEC, msg -> msg.text,
             EditLetteredConnectionMessage::new
     );
 
-    private StyledString text;
+    private Component text;
 
-    public EditLetteredConnectionMessage(ConnectionInfo data, StyledString text) {
+    public EditLetteredConnectionMessage(ConnectionInfo data, Component text) {
         super(data);
         this.text = text;
     }
 
-    public EditLetteredConnectionMessage(final C connection, final StyledString text) {
+    public EditLetteredConnectionMessage(final C connection, final Component text) {
         super(connection);
         this.text = text;
     }

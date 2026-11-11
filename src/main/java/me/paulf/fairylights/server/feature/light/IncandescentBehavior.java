@@ -30,8 +30,8 @@ public class IncandescentBehavior implements BrightnessLightBehavior {
         } else {
             this.brighten(0.0F, 0.1F);
         }
-        if (this.brightness > 0.85F && world.random.nextFloat() < 0.25F) {
-            this.brightness -= world.random.nextFloat() * 0.05F;
+        if (this.brightness > 0.85F && world.getRandom().nextFloat() < 0.25F) {
+            this.brightness -= world.getRandom().nextFloat() * 0.05F;
         }
     }
 
