@@ -1,5 +1,6 @@
 package me.paulf.fairylights.server.connection;
 
+import com.google.common.base.Suppliers;
 import me.paulf.fairylights.server.fastener.Fastener;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.Items;
@@ -11,11 +12,11 @@ import java.util.function.Supplier;
 public class ConnectionType<T extends Connection> {
     private final Factory<T> factory;
 
-    private final Item item;
+    private final Supplier<Item> item;
 
     public ConnectionType(final Builder<T> builder) {
         this.factory = builder.factory;
-        this.item = builder.item;
+        this.item = Suppliers.memoize(builder.item::get);
     }
 
     public T create(final Level world, final Fastener<?> fastener, final UUID uuid) {
@@ -23,19 +24,19 @@ public class ConnectionType<T extends Connection> {
     }
 
     public Item getItem() {
-        return this.item;
+        return this.item.get();
     }
 
     public static final class Builder<T extends Connection> {
         final Factory<T> factory;
 
-        Item item = Items.AIR;
+        Supplier<Item> item = () -> Items.AIR;
 
         private Builder(final Factory<T> factory) {
             this.factory = factory;
         }
 
-        public Builder<T> item(final Item item) {
+        public Builder<T> item(final Supplier<Item> item) {
             this.item = item;
             return this;
         }

@@ -81,28 +81,36 @@ public final class GenericRecipe extends CustomRecipe {
         return this.room;
     }
 
+    private static Ingredient regularOrComponents(ItemStack stack) {
+        var ingredient = Ingredient.of(stack.getItem());
+        if (!stack.getComponentsPatch().isEmpty())
+            ingredient = DefaultCustomIngredients.components(ingredient, stack.getComponentsPatch());
+
+        return ingredient;
+    }
+
     private List<Ingredient> getDisplayIngredients() {
-        final List<Ingredient> ingredients = new ArrayList<>(9);
+        final List<Optional<Ingredient>> ingredients = NonNullList.withSize(9, Optional.empty());
         for (int i = 0; i < this.ingredients.length; i++) {
             final int x = i % this.width;
             final int y = i / this.width;
             final ItemStack[] stacks = this.ingredients[i].getInputs().toArray(new ItemStack[0]);
-            ingredients.set(x + y * 3, DefaultCustomIngredients.any(Arrays.stream(stacks).map(DefaultCustomIngredients::components).toArray(Ingredient[]::new)));
+            ingredients.set(x + y * 3, Optional.of(DefaultCustomIngredients.any(Arrays.stream(stacks).map(GenericRecipe::regularOrComponents).toArray(Ingredient[]::new))));
         }
         for (int i = 0, slot = 0; slot < ingredients.size(); slot++) {
-            final Ingredient ing = ingredients.get(slot);
+            final Optional<Ingredient> ing = ingredients.get(slot);
             if (ing.isEmpty()) {
                 while (i < this.auxiliaryIngredients.length) {
                     final AuxiliaryIngredient<?> aux = this.auxiliaryIngredients[i++];
                     if (aux.isRequired()) {
                         final ItemStack[] stacks = aux.getInputs().toArray(new ItemStack[0]);
-                        ingredients.set(slot, DefaultCustomIngredients.any(Arrays.stream(stacks).map(DefaultCustomIngredients::components).toArray(Ingredient[]::new)));
+                        ingredients.set(slot, Optional.of(DefaultCustomIngredients.any(Arrays.stream(stacks).map(GenericRecipe::regularOrComponents).toArray(Ingredient[]::new))));
                         break;
                     }
                 }
             }
         }
-        return ingredients.stream().filter(e -> e != null).toList();
+        return ingredients.stream().filter(Optional::isPresent).map(Optional::get).toList();
     }
 
     @Override

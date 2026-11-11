@@ -295,7 +295,7 @@ public final class HangingLightsConnection extends HangingFeatureConnection<Ligh
     @Override
     public void deserializeLogic(ValueInput input) {
         super.deserializeLogic(input);
-        this.string = input.read("string", FairyLights.STRING_TYPES.byNameCodec()).orElseThrow();
+        this.string = input.read("string", FairyLights.STRING_TYPES.byNameCodec()).orElse(null);
         final var patternList = input.listOrEmpty("pattern", ItemStack.OPTIONAL_CODEC);
         this.pattern = new ArrayList<>();
         for (ItemStack stack : patternList) {

@@ -15,12 +15,13 @@ import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 import org.jspecify.annotations.Nullable;
 import org.ladysnake.cca.api.v3.component.Component;
+import org.ladysnake.cca.api.v8.component.CardinalComponent;
 
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
-public interface Fastener<F extends FastenerAccessor> extends Component {
+public interface Fastener<F extends FastenerAccessor> extends CardinalComponent {
     void serializeNBT(ValueOutput output);
     void deserializeNBT(ValueInput input);
 

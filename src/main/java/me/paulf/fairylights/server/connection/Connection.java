@@ -401,7 +401,7 @@ public abstract class Connection implements NBTSerializable {
 
     @Override
     public void deserialize(ValueInput input) {
-        this.destination = input.read("destination", FastenerType.CODEC).orElseThrow();
+        this.destination = input.read("destination", FastenerType.CODEC).orElse(null);
         this.deserializeLogic(input.childOrEmpty("logic"));
         this.slack = input.getFloatOr("slack", 1);
         this.drop = input.getBooleanOr("drop", false);
